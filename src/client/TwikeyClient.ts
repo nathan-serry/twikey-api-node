@@ -5,7 +5,7 @@ import {TwikeyConfig} from "../models/Config";
 import {PaylinkService} from "./services/PaylinkService";
 import {SubscriptionService} from "./services/SubscriptionService";
 import {CustomerService} from "./services/CustomerService";
-import {TransferService} from "./services/TransferService";
+import {RefundService} from "./services/RefundService";
 import {CollectService} from "./services/CollectService";
 import {ReportingService} from "./services/ReportingService";
 import {createHmac, timingSafeEqual} from "node:crypto";
@@ -24,7 +24,7 @@ export class TwikeyClient {
   readonly paylink: PaylinkService;
   readonly subscription: SubscriptionService;
   readonly customer: CustomerService;
-  readonly transfer: TransferService;
+  readonly refund: RefundService;
   readonly collect: CollectService;
   readonly reporting: ReportingService;
 
@@ -51,7 +51,7 @@ export class TwikeyClient {
     this.paylink = new PaylinkService(this.client);
     this.subscription = new SubscriptionService(this.client);
     this.customer = new CustomerService(this.client);
-    this.transfer = new TransferService(this.client);
+    this.refund = new RefundService(this.client);
     this.collect = new CollectService(this.client);
     this.reporting = new ReportingService(this.client);
   }
