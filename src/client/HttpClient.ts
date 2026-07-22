@@ -85,7 +85,17 @@ export class FetchClient {
       }
     }
 
-    const response = await fetch(url, { method, headers, body: fetchBody });
+    const maxRetries = 3;
+    let response: Response;
+    let attempt = 0;
+    for (;;) {
+      response = await fetch(url, { method, headers, body: fetchBody });
+      if (response.status !== 429 || attempt >= maxRetries) break;
+      const retryAfter = Number(response.headers.get('retry-after'));
+      const delayMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 500 * 2 ** attempt;
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      attempt++;
+    }
 
     const responseHeaders: Record<string, string> = {};
     response.headers.forEach((value, key) => { responseHeaders[key] = value; });
