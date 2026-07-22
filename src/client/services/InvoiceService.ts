@@ -1,15 +1,13 @@
 import {BaseResponse, BaseService} from "./BaseService";
+import {InvoiceActionRequest, InvoiceRequest, InvoiceUpdateRequest} from "../../models/InvoiceRequest";
 import {
-  InvoiceActionRequest,
   InvoiceBulkEntry,
   InvoiceBulkResult,
   InvoiceQrResponse,
-  InvoiceRequest,
   InvoiceResponse,
-  InvoiceUpdateRequest,
   PaymentResponse,
-} from "../../models/Invoice";
-import {FeedOptions, PdfResponse} from "../../models/Document";
+} from "../../models/InvoiceResponse";
+import {FeedOptions, PdfResponse} from "../../models/Shared";
 
 
 export class InvoiceService extends BaseService {

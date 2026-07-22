@@ -1,10 +1,6 @@
 import {BaseService} from "./BaseService";
-import {
-  BeneficiaryRequest,
-  BeneficiaryResponse,
-  TransferCompleteRequest,
-  TransferRequest,
-} from "../../models/Transfer";
+import {BeneficiaryRequest, TransferCompleteRequest, TransferRequest} from "../../models/TransferRequest";
+import {BeneficiaryResponse} from "../../models/TransferResponse";
 
 export class TransferService extends BaseService {
 

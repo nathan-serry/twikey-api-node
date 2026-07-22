@@ -1,14 +1,10 @@
 import {FetchClient, HttpResponse} from "../HttpClient";
+export type {PdfResponse} from "../../models/Shared";
 
 export interface BaseResponse<T> {
   data: T
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   headers: any
-}
-
-export interface PdfResponse {
-  content: Buffer;
-  filename: string;
 }
 
 export class BaseService {

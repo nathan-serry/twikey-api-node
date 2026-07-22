@@ -1,16 +1,17 @@
 import {BaseService} from "./BaseService";
 import {
-  CustomerAccessResponse,
-  DocumentFeedMessage,
   DocumentQueryRequest,
-  DocumentQueryResponse,
   DocumentRequest,
-  DocumentResponse,
   DocumentSignRequest,
   DocumentUpdateRequest,
-  FeedOptions,
-  PdfResponse,
-} from "../../models/Document";
+} from "../../models/DocumentRequest";
+import {
+  CustomerAccessResponse,
+  DocumentFeedMessage,
+  DocumentQueryResponse,
+  DocumentResponse,
+} from "../../models/DocumentResponse";
+import {FeedOptions, PdfResponse} from "../../models/Shared";
 
 export class DocumentService extends BaseService {
   async create(request: DocumentRequest): Promise<DocumentResponse> {

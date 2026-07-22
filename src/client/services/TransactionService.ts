@@ -1,17 +1,19 @@
 import {BaseService} from "./BaseService";
 import {
-  Transaction,
   TransactionActionRequest,
-  TransactionBulkEntry,
-  TransactionBulkResult,
   TransactionQueryRequest,
   TransactionRefundRequest,
   TransactionRemoveRequest,
   TransactionRequest,
-  TransactionResponse,
   TransactionUpdateRequest,
-} from "../../models/Transaction";
-import {FeedOptions} from "../../models/Document";
+} from "../../models/TransactionRequest";
+import {
+  Transaction,
+  TransactionBulkEntry,
+  TransactionBulkResult,
+  TransactionResponse,
+} from "../../models/TransactionResponse";
+import {FeedOptions} from "../../models/Shared";
 
 export class TransactionService extends BaseService {
   async create(request: TransactionRequest): Promise<Transaction> {

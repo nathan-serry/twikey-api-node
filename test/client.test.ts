@@ -83,7 +83,7 @@ describe('Document', {skip: noApiConfigured}, async () => {
         mandateNumber: importedMandate,
         iban: 'NL95BUNQ2025545371',
         bic: 'BUNQNL2A',
-        email: faker.internet.email(),
+email: faker.internet.email(),
         firstname: faker.person.firstName(),
         lastname: faker.person.lastName(),
         address: faker.location.street(),

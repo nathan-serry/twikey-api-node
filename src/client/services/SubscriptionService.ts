@@ -1,9 +1,10 @@
 import {BaseService} from "./BaseService";
 import {
+  SubscriptionQueryRequest,
   SubscriptionRequest,
-  SubscriptionResponse,
   SubscriptionUpdateRequest,
-} from "../../models/Subscription";
+} from "../../models/SubscriptionRequest";
+import {SubscriptionResponse} from "../../models/SubscriptionResponse";
 
 export class SubscriptionService extends BaseService {
 
@@ -15,7 +16,7 @@ export class SubscriptionService extends BaseService {
     return this.get(`/subscription/${mandateNumber}/${ref}`, undefined, { "Content-Type": "application/json" }).then(value => value.data);
   }
 
-  async query(params: Record<string, string | number | boolean | undefined>): Promise<SubscriptionResponse[]> {
+  async query(params: SubscriptionQueryRequest): Promise<SubscriptionResponse[]> {
     return this.get("/subscription/query", params, { "Content-Type": "application/json" }).then(value => value.data);
   }
 

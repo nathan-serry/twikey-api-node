@@ -1,10 +1,6 @@
 import { BaseService } from "./BaseService";
-import {
-    CustomerLoginRequest,
-    CustomerLoginResponse,
-    CustomerRequest,
-    CustomerResponse,
-} from "../../models/Customer";
+import {CustomerLoginRequest, CustomerRequest} from "../../models/CustomerRequest";
+import {CustomerLoginResponse, CustomerResponse} from "../../models/CustomerResponse";
 
 export class CustomerService extends BaseService {
 

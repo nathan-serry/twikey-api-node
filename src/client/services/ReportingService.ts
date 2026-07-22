@@ -1,9 +1,6 @@
 import {BaseService} from "./BaseService";
-import {
-  ReconciliationFile,
-  ReconciliationGenerateRequest,
-  ReportingEntry,
-} from "../../models/Reporting";
+import {ReconciliationGenerateRequest, ReportingEntry} from "../../models/ReportingRequest";
+import {ReconciliationFile} from "../../models/ReportingResponse";
 
 export class ReportingService extends BaseService {
 

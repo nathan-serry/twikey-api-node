@@ -1,6 +1,7 @@
 import {BaseService} from "./BaseService";
-import {PaylinkRefundRequest, PaylinkRequest, PaylinkResponse} from "../../models/Paylink";
-import {FeedOptions} from "../../models/Document";
+import {PaylinkRefundRequest, PaylinkRequest} from "../../models/PaylinkRequest";
+import {PaylinkResponse} from "../../models/PaylinkResponse";
+import {FeedOptions} from "../../models/Shared";
 
 export class PaylinkService extends BaseService {
 

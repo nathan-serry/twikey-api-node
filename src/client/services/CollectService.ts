@@ -1,5 +1,6 @@
 import {BaseService} from "./BaseService";
-import {CollectQueryRequest, CollectRequest, CollectResponse} from "../../models/Collect";
+import {CollectDetailRequest, CollectQueryRequest, CollectRequest} from "../../models/CollectRequest";
+import {CollectResponse} from "../../models/CollectResponse";
 
 export class CollectService extends BaseService {
 
@@ -7,7 +8,7 @@ export class CollectService extends BaseService {
     return this.post("/collect", request).then(value => value.data);
   }
 
-  async detail(params: Record<string, string | number | boolean | undefined>): Promise<CollectResponse> {
+  async detail(params: CollectDetailRequest): Promise<CollectResponse> {
     return this.get("/collect", params).then(value => value.data);
   }
 
