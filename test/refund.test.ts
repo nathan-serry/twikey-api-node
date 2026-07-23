@@ -1,18 +1,18 @@
 import {describe, test} from "node:test";
 import * as assert from 'assert';
 import {faker} from '@faker-js/faker';
-import {CT, getClient, noApiConfigured} from "./support/helpers";
+import {CT, getClient, noApiConfigured, TEST_BIC, TEST_IBAN} from "./support/helpers";
 
 describe('Refund', {skip: noApiConfigured}, async () => {
 
     const client = getClient();
 
     test('addBeneficiary then getBeneficiaries includes it', async () => {
-        const iban = 'NL95BUNQ2025545371';
+        const iban = TEST_IBAN;
         const beneficiary = await client.refund.addBeneficiary({
             name: faker.person.fullName(),
             iban,
-            bic: 'BUNQNL2A',
+            bic: TEST_BIC,
             address: faker.location.street(),
             city: faker.location.city(),
             zip: faker.location.zipCode(),
@@ -27,13 +27,13 @@ describe('Refund', {skip: noApiConfigured}, async () => {
     });
 
     test('disableBeneficiary removes a beneficiary', async () => {
-        const iban = 'NL95BUNQ2025545371';
+        const iban = TEST_IBAN;
         const customerNumber = faker.git.commitSha();
         await client.refund.addBeneficiary({
             customerNumber,
             name: faker.person.fullName(),
             iban,
-            bic: 'BUNQNL2A',
+            bic: TEST_BIC,
             address: faker.location.street(),
             city: faker.location.city(),
             zip: faker.location.zipCode(),
@@ -47,7 +47,7 @@ describe('Refund', {skip: noApiConfigured}, async () => {
     test('addRefund creates a refund/transfer', async () => {
         const ref = 'REFUND-' + faker.git.commitSha({length: 8});
         const customerNumber = faker.git.commitSha();
-        const iban = 'NL95BUNQ2025545371';
+        const iban = TEST_IBAN;
 
         // A customer record is created as a side effect of inviting them onto a mandate.
         await client.document.create({
@@ -68,7 +68,7 @@ describe('Refund', {skip: noApiConfigured}, async () => {
             customerNumber,
             name: faker.person.fullName(),
             iban,
-            bic: 'BUNQNL2A',
+            bic: TEST_BIC,
             address: faker.location.street(),
             city: faker.location.city(),
             zip: faker.location.zipCode(),
@@ -81,12 +81,15 @@ describe('Refund', {skip: noApiConfigured}, async () => {
             message: 'Refund test',
             amount: 10,
             iban,
-            bic: 'BUNQNL2A',
+            bic: TEST_BIC,
             name: faker.person.fullName(),
         });
     });
 
-    test('collectRefund completes a refund batch', async () => {
-        await client.refund.collectRefund({ct: CT()});
+    // Executes the pending refund batch as a SEPA credit transfer, which needs a
+    // configured originating/payout account on the creditor (err_invalid_iban otherwise).
+    // Gated on REFUND_IBAN until that account is set up Twikey-side.
+    test('collectRefund completes a refund batch', {skip: !process.env.REFUND_IBAN}, async () => {
+        await client.refund.collectRefund({ct: CT(), iban: process.env.REFUND_IBAN});
     });
 });

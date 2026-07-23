@@ -43,7 +43,7 @@ describe('Subscription', {skip: noApiConfigured}, async () => {
     });
 
     test('query returns subscriptions', async () => {
-        const results = await client.subscription.query({});
-        assert.ok(Array.isArray(results) || results, 'no query results');
+        const subscriptions = await client.subscription.query({});
+        assert.ok(Array.isArray(subscriptions), 'expected an array of subscriptions');
     });
 });

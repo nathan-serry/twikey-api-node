@@ -18,5 +18,5 @@ export interface PaylinkRequest extends BaseInfo {
 export interface PaylinkRefundRequest {
     id: number;
     amount: number;
-    message: string;
+    message?: string;
 }

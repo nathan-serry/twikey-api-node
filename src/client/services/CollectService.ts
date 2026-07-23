@@ -4,19 +4,20 @@ import {CollectResponse} from "../../models/CollectResponse";
 
 export class CollectService extends BaseService {
 
+  // TODO(collect): `/collect` is Twikey's batch-collection executor — POST /collect
+  // with { ct, colltndt? } returns a batch identifier (see twikey-api-python
+  // transaction.batch_send, api.twikey.com anchor #execute-collection). It is NOT a
+  // synonym for /transaction: an earlier "test fixes" commit repointed these calls at
+  // /transaction to make a test pass, which turned collect() into a duplicate of
+  // TransactionService.create(). Reverted here to /collect; the proper batch-send rework
+  // (new request/response shapes, decide detail()/query(), live verification) is deferred
+  // to the next push — see the Collect review flag in CLAUDE.md.
   async collect(request: CollectRequest): Promise<CollectResponse> {
-    const {ct, ...body} = request;
-    return this.post("/transaction", body).then(value => {
-      const entry = value.data?.Entries?.[0] ?? value.data;
-      return {id: entry.id, state: entry.status, amount: entry.amount, ref: entry.ref};
-    });
+    return this.post("/collect", request).then(value => value.data);
   }
 
   async detail(params: CollectDetailRequest): Promise<CollectResponse> {
-    return this.get("/transaction/detail", params).then(value => {
-      const entry = value.data?.Entries?.[0] ?? value.data;
-      return {id: entry.id, state: entry.status, amount: entry.amount, ref: entry.ref};
-    });
+    return this.get("/collect", params).then(value => value.data);
   }
 
   async query(params: CollectQueryRequest): Promise<CollectResponse[]> {

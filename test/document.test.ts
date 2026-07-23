@@ -2,7 +2,7 @@ import {FeedOptions} from "../src";
 import {describe, test} from "node:test";
 import * as assert from 'assert';
 import {faker} from '@faker-js/faker';
-import {CT, getClient, importedMandate, noApiConfigured, testPdfBuffer} from "./support/helpers";
+import {CT, getClient, importedMandate, noApiConfigured, TEST_BIC, TEST_IBAN, testPdfBuffer} from "./support/helpers";
 
 describe('Document', {skip: noApiConfigured}, async () => {
 
@@ -11,8 +11,8 @@ describe('Document', {skip: noApiConfigured}, async () => {
     test('create -> uploadPdf -> pdf -> sign -> detail -> feed', async () => {
         const document = await client.document.create({
             ct: CT(),
-            iban: 'NL95BUNQ2025545371',
-            bic: 'BUNQNL2A',
+            iban: TEST_IBAN,
+            bic: TEST_BIC,
             email: faker.internet.email(),
             firstname: faker.person.firstName(),
             lastname: faker.person.lastName(),

@@ -9,7 +9,9 @@ export class RefundService extends BaseService {
   }
 
   async getBeneficiaries(): Promise<BeneficiaryResponse[]> {
-    return this.get("/transfers/beneficiaries").then(value => value.data.beneficiaries);
+    // The API wraps the list in { beneficiaries: [...] }; fall back to a bare array or
+    // an empty list so a shape change never yields `undefined` typed as an array.
+    return this.get("/transfers/beneficiaries").then(value => value.data?.beneficiaries ?? value.data ?? []);
   }
 
   async disableBeneficiary(iban: string, customerNumber?: string): Promise<void> {

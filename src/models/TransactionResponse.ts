@@ -2,7 +2,7 @@ export interface Transaction {
     id: string;
     mandate: string;
     amount: number;
-    status: string;
+    state: string;
     executionDate: string;
     ref?: string;
     remittance?: string;

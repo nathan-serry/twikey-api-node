@@ -59,7 +59,18 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
         assert.ok(bulk, 'no bulk response');
         assert.ok(bulk.batchId, 'bulk response missing batchId');
 
-        const entries = await client.transaction.bulkStatus(bulk.batchId);
+        // The batch may still be processing right after creation (bulkStatus 409s);
+        // poll a few times before giving up.
+        let entries;
+        for (let attempt = 0; ; attempt++) {
+            try {
+                entries = await client.transaction.bulkStatus(bulk.batchId);
+                break;
+            } catch (e) {
+                if (attempt >= 4 || !/status=409/.test((e as Error).message)) throw e;
+                await new Promise(r => setTimeout(r, 500));
+            }
+        }
         assert.ok(Array.isArray(entries), 'expected entries array');
         assert.ok(entries.length > 0, 'empty entries');
         assert.ok(entries[0].status, 'entry missing status');
@@ -74,5 +85,13 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
         });
         assert.ok(tx.id, 'transaction missing id');
         await client.transaction.remove({id: tx.id});
+
+        // Verify the removal took effect: DELETE /transaction removes a not-yet-sent
+        // transaction outright, so /transaction/detail must no longer return that id.
+        const afterRemoval = await client.transaction.detail(tx.id);
+        assert.ok(
+            !afterRemoval.Entries?.some(e => e.id === tx.id),
+            'removed transaction should no longer be returned by /transaction/detail',
+        );
     });
 });

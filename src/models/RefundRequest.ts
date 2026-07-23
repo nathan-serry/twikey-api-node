@@ -3,10 +3,10 @@ export interface BeneficiaryRequest {
     name: string;
     iban: string;
     bic?: string;
-    address: string;
-    city: string;
-    zip: string;
-    country: string;
+    address?: string;
+    city?: string;
+    zip?: string;
+    country?: string;
 }
 
 export interface RefundRequest {
@@ -21,7 +21,7 @@ export interface RefundRequest {
     zip?: string;
     country?: string;
     ct?: number;
-    customerNumber: string;
+    customerNumber?: string;
 }
 
 export interface RefundBatchRequest {

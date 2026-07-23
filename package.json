@@ -1,6 +1,6 @@
 {
   "name": "twikey-api-client",
-  "version": "0.1.0",
+  "version": "0.0.3",
   "description": "Twikey API wrapper",
   "homepage": "https://github.com/twikey/twikey-api-node",
   "author": "Twikey <support@twikey.com> (https://twikey.com/)",
@@ -28,8 +28,9 @@
   "license": "MIT",
   "scripts": {
     "test": "tsx --test --test-concurrency=1",
+    "typecheck": "tsc -p ./tsconfig.json",
     "clean": "rm -rf ./dist",
-    "build": "npm run clean && tsc -p ./tsconfig.json",
+    "build": "npm run clean && tsc -p ./tsconfig.build.json",
     "prepack": "npm run build",
     "dist": "npm publish"
   },
@@ -39,8 +40,5 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "twikey-api-client": "^0.0.3"
   }
 }

@@ -69,19 +69,16 @@ describe('Paylink extended', {skip: noApiConfigured}, async () => {
         assert.ok(detail, 'no detail returned');
     });
 
-    test('refund a paylink', async () => {
-        const link = await client.paylink.create({
-            ct: CT(),
-            ref: faker.git.commitSha({length: 8}),
-            firstname: faker.person.firstName(),
-            lastname: faker.person.lastName(),
-            message: faker.commerce.productName() + ' ' + Date.now(),
-            amount: Number(faker.commerce.price({min: 10, max: 500}))
-        });
-        assert.ok(link.id, 'paylink missing id');
-
-        // Requires the link to actually be paid in the beta environment before a
-        // refund is accepted by the API; kept here so the call shape is covered.
-        await client.paylink.refund({id: link.id, amount: 1, message: 'Refund test'});
+    // A link can only be refunded once it has actually been paid, which can't be done
+    // via the API. Point PAID_PAYLINK_ID at a real paid link in the beta environment.
+    test('refund a paid paylink', {skip: !process.env.PAID_PAYLINK_ID}, async () => {
+        const id = Number(process.env.PAID_PAYLINK_ID);
+        // Refunds aren't idempotent: the same link+amount is rejected as a duplicate on
+        // repeat runs. Either outcome proves the call is well-formed and accepted.
+        try {
+            await client.paylink.refund({id, amount: 1, message: 'Refund test ' + faker.git.commitSha({length: 8})});
+        } catch (e) {
+            assert.match((e as Error).message, /duplicate refund/i, 'refund rejected for an unexpected reason');
+        }
     });
 });

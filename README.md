@@ -34,13 +34,6 @@ Using [yarn](https://yarnpkg.com/):
 yarn add twikey-api-client
 ```
 
-### Upgrading to 0.1.0 ##
-
-The `transfer` client is renamed to `refund`: `client.transfer` is now `client.refund`,
-and the `TransferRequest`/`TransferResponse`/`TransferCompleteRequest` types are now
-`RefundRequest`/`RefundResponse`/`RefundBatchRequest`. The underlying API endpoints are
-unchanged — only the SDK-level names moved.
-
 ## How to create anything ##
 
 The api works the same way regardless if you want to create a mandate, a transaction, an invoice or even a paylink.

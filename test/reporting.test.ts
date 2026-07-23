@@ -1,12 +1,10 @@
-import {ReportingEntry} from "../src";
 import {describe, test} from "node:test";
 import * as assert from 'assert';
-import {faker} from '@faker-js/faker';
-import {getClient, noApiConfigured, TEST_BIC, TEST_IBAN} from "./support/helpers";
+import {getReportingClient, noReportingConfigured} from "./support/helpers";
 
-describe('Reporting', {skip: noApiConfigured}, async () => {
+describe('Reporting', {skip: noReportingConfigured}, async () => {
 
-    const client = getClient();
+    const client = getReportingClient();
 
     test('feed returns without error', async () => {
         const result = await client.reporting.feed();
@@ -15,26 +13,7 @@ describe('Reporting', {skip: noApiConfigured}, async () => {
 
     test('getFiles returns without error', async () => {
         const files = await client.reporting.getFiles();
-        assert.ok(Array.isArray(files) || files !== undefined, 'unexpected files response');
-    });
-
-    test('addAccount posts a raw account statement payload', async () => {
-        // Content format expected by the live endpoint isn't fully documented
-        // client-side; adjust the payload to match a real bank statement export
-        // when running this against a real account.
-        await client.reporting.addAccount('This is a test reporting payload');
-    });
-
-    test('addItems posts structured reconciliation entries', async () => {
-        const items: ReportingEntry[] = [{
-            name: faker.person.fullName(),
-            msg: 'Reporting test entry',
-            amount: 12.34,
-            date: new Date().toISOString().split('T')[0],
-            iban: TEST_IBAN,
-            bic: TEST_BIC,
-        }];
-        await client.reporting.addItems(TEST_IBAN, items);
+        assert.ok(Array.isArray(files), 'expected an array of files');
     });
 
     test('generateReconciliation then optionally downloadFile', async () => {

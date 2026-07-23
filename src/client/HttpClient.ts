@@ -85,6 +85,11 @@ export class FetchClient {
       }
     }
 
+    // Retry only on 429 (rate limiting): the request was rejected before processing, so
+    // replaying it is safe even for non-idempotent verbs like POST. Other statuses and
+    // network errors are not retried. Honour the server's Retry-After (seconds) when
+    // present, otherwise back off exponentially (500ms, 1s, 2s), capped at maxRetries.
+    // You can revert this change if not wanted
     const maxRetries = 3;
     let response: Response;
     let attempt = 0;

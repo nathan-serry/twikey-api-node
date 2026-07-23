@@ -23,6 +23,17 @@ export const getClient = (): TwikeyClient => {
     return cachedClient;
 };
 
+// Reporting/reconciliation lives on a creditor with that feature enabled, reached via
+// its own API key (the default key can't see it). Skip the suite until REPORTING_API_KEY
+// is provided.
+export const noReportingConfigured = !process.env.REPORTING_API_KEY;
+
+export const getReportingClient = (): TwikeyClient => new TwikeyClient({
+    apiKey: process.env.REPORTING_API_KEY || process.env.TWIKEY_API_KEY || '',
+    apiUrl: process.env.TWIKEY_API_URL || "https://api.beta.twikey.com/creditor",
+    userAgent: "twikey-api-node-test",
+});
+
 export const CT = (): number => {
     const ct = process.env.CT;
     assert.ok(ct, "CT not defined");

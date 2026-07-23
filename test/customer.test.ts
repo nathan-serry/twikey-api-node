@@ -51,5 +51,11 @@ describe('Customer', {skip: noApiConfigured}, async () => {
         });
 
         await client.customer.remove(customerNumber);
+
+        // Removal must actually take effect: fetching the removed customer should fail.
+        await assert.rejects(
+            () => client.customer.fetch(customerNumber),
+            'removed customer should no longer be fetchable',
+        );
     });
 });
