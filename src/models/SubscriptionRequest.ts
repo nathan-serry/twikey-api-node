@@ -4,9 +4,9 @@ export interface SubscriptionRequest {
     ref?: string;
     amount: number;
     message?: string;
-    recurrencePeriod?: string;
-    startDate?: string;
-    stopDate?: string;
+    recurrence?: string;
+    start?: string;
+    stop?: string;
     recurrenceCount?: number;
     transactionMessage?: string;
 }
@@ -14,9 +14,9 @@ export interface SubscriptionRequest {
 export interface SubscriptionUpdateRequest {
     amount?: number;
     message?: string;
-    startDate?: string;
-    stopDate?: string;
-    recurrencePeriod?: string;
+    start?: string;
+    stop?: string;
+    recurrence?: string;
     recurrenceCount?: number;
     transactionMessage?: string;
 }

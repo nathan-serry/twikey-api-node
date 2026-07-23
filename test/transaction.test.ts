@@ -50,7 +50,9 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
     });
 
     test('bulkCreate then bulkStatus round-trip', async () => {
-        const mndtId = process.env.MNDTNUMBER!;
+        // Use a fresh recurring mandate; the shared MNDTNUMBER is a contract-type
+        // mandate whose entries fail with err_invalid_state.
+        const mndtId = await importedMandate(client, 'BULK-');
         const bulk = await client.transaction.bulkCreate([
             {mndtId, message: 'Bulk test', amount: 50}
         ]);

@@ -27,7 +27,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "test": "tsx --test",
+    "test": "tsx --test --test-concurrency=1",
     "clean": "rm -rf ./dist",
     "build": "npm run clean && tsc -p ./tsconfig.json",
     "prepack": "npm run build",

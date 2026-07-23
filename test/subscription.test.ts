@@ -2,38 +2,44 @@ import {describe, test} from "node:test";
 import * as assert from 'assert';
 import * as process from "node:process";
 import {faker} from '@faker-js/faker';
-import {getClient, noApiConfigured} from "./support/helpers";
+import {getClient, importedMandate, noApiConfigured} from "./support/helpers";
 
 describe('Subscription', {skip: noApiConfigured}, async () => {
 
     const client = getClient();
 
     test('full lifecycle: create -> detail -> update -> partialUpdate -> cancel', {skip: !process.env.SUBSCRIPTION_CT}, async () => {
-        const mndtId = process.env.MNDTNUMBER;
-        assert.ok(mndtId, 'MNDTNUMBER not defined');
+        // Needs a fresh recurring mandate; the shared MNDTNUMBER is a contract-type
+        // mandate the API rejects for subscriptions.
+        const mndtId = await importedMandate(client, 'SUB-');
 
-        const ref = 'SUB-REF-' + faker.git.commitSha({length: 6});
+        // The API strips dashes from the ref, so keep it dash-free or lookups miss.
+        const ref = 'SUBREF' + faker.git.commitSha({length: 6});
         const subscription = await client.subscription.create({
             ct: Number(process.env.SUBSCRIPTION_CT!),
             mndtId,
             ref,
             amount: 99,
             message: 'Monthly test subscription',
-            recurrencePeriod: 'monthly',
+            recurrence: '1m',
+            start: '2026-08-01',
         });
         assert.ok(subscription, 'no subscription returned');
         assert.ok(subscription.mandateNumber || subscription.ref, 'subscription missing identifier');
 
         const mandateNumber = subscription.mandateNumber ?? mndtId;
+        // The API upper-cases the ref, so use the value it returned for follow-up calls.
+        const canonicalRef = subscription.ref ?? ref;
 
-        const detail = await client.subscription.detail(mandateNumber, ref);
+        const detail = await client.subscription.detail(mandateNumber, canonicalRef);
         assert.ok(detail, 'no detail returned');
 
-        await client.subscription.update(mandateNumber, ref, {amount: 149});
+        // Update is a full replacement — re-send all required fields.
+        await client.subscription.update(mandateNumber, canonicalRef, {amount: 149, message: 'Updated message', recurrence: '1m', start: '2026-08-01'});
 
-        await client.subscription.partialUpdate(mandateNumber, ref, {message: 'Updated message'});
+        await client.subscription.partialUpdate(mandateNumber, canonicalRef, {message: 'Updated message'});
 
-        await client.subscription.cancel(mandateNumber, ref);
+        await client.subscription.cancel(mandateNumber, canonicalRef);
     });
 
     test('query returns subscriptions', async () => {

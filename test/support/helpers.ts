@@ -39,7 +39,7 @@ export const testPdfBase64 = testPdfBuffer.toString('base64');
 // Signs an imported (already-signed) mandate so tests have a valid mndtId to work with.
 export const importedMandate = async (client: TwikeyClient, suffix = ''): Promise<string> => {
     const mandateNumber = 'IMPORT-' + suffix + faker.git.commitSha({length: 8});
-    await client.document.sign({
+    const signed = await client.document.sign({
         ct: CT(),
         method: "import",
         mandateNumber,
@@ -54,7 +54,9 @@ export const importedMandate = async (client: TwikeyClient, suffix = ''): Promis
         l: 'nl',
         country: 'BE',
     });
-    return mandateNumber;
+    // The API upper-cases the id, and some endpoints (subscription, transaction/bulk)
+    // match it case-sensitively — return the id the API assigned, not our lowercase one.
+    return signed.mndtId ?? mandateNumber;
 };
 
 export const randomCustomer = () => ({

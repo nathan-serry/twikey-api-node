@@ -25,7 +25,8 @@ export class SubscriptionService extends BaseService {
   }
 
   async update(mandateNumber: string, ref: string, fields: SubscriptionUpdateRequest): Promise<void> {
-    await this.post(`/subscription/${mandateNumber}/${ref}`, fields);
+    // Full-replacement update — the API needs mndtId in the body.
+    await this.post(`/subscription/${mandateNumber}/${ref}`, {mndtId: mandateNumber, ...fields});
   }
 
   async partialUpdate(mandateNumber: string, ref: string, fields: SubscriptionUpdateRequest): Promise<void> {

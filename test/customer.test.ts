@@ -2,7 +2,7 @@ import {describe, test} from "node:test";
 import * as assert from 'assert';
 import * as process from "node:process";
 import {faker} from '@faker-js/faker';
-import {CT, getClient, noApiConfigured} from "./support/helpers";
+import {getClient, noApiConfigured} from "./support/helpers";
 
 describe('Customer', {skip: noApiConfigured}, async () => {
 
@@ -21,18 +21,17 @@ describe('Customer', {skip: noApiConfigured}, async () => {
     test('fetch -> update -> replace -> remove lifecycle', async () => {
         const customerNumber = faker.git.commitSha();
 
-        // A customer record is created as a side effect of inviting them onto a mandate.
-        await client.document.create({
-            ct: CT(),
-            customerNumber,
-            email: faker.internet.email(),
+        // Create a plain customer, no mandate. An invite attaches a contract that
+        // blocks removal (err_remove_stale) — and cancelling it doesn't clear that.
+        await client.customer.replace(customerNumber, {
             firstname: faker.person.firstName(),
             lastname: faker.person.lastName(),
+            email: faker.internet.email(),
             address: faker.location.street(),
             city: faker.location.city(),
             zip: faker.location.zipCode(),
-            l: 'nl',
             country: 'BE',
+            l: 'nl',
         });
 
         const fetched = await client.customer.fetch(customerNumber);
