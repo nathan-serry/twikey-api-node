@@ -206,10 +206,11 @@ export class TransactionService extends BaseService {
    *
    * @param transactionId - The unique ID of the transaction to update.
    * @param update - The fields to update.
-   * @returns A structured response object representing the server's reply.
+   * @returns The HTTP status code (204 on success) and any response body.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
-  async update(transactionId: string, update: TransactionUpdateRequest): Promise<TransactionResponse> {
-    return this.post(`/transaction/${transactionId}`, update).then(value => value.data);
+  async update(transactionId: string, update: TransactionUpdateRequest): Promise<{ code?: number; data: any }> {
+    const res = await this.put("/transaction", { id: transactionId, ...update });
+    return { code: res.status, data: res.data };
   }
 }

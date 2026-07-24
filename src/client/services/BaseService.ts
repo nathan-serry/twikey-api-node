@@ -5,6 +5,7 @@ export interface BaseResponse<T> {
   data: T
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   headers: any
+  status?: number
 }
 
 export class BaseService {
@@ -33,7 +34,8 @@ export class BaseService {
     const response = await this.client.put(endpoint, data, { headers });
     return {
       data: response.data,
-      headers: response.headers
+      headers: response.headers,
+      status: response.status
     };
   }
 

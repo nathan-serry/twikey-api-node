@@ -88,6 +88,21 @@ describe('Invoice extended', {skip: noApiConfigured}, async () => {
         );
     });
 
+    test('update changes an invoice', async () => {
+        const invoice = await makeInvoice();
+        assert.ok(invoice.id, 'invoice missing id');
+        const updated = await client.invoice.update(invoice.id, {message: 'Updated ' + Date.now()});
+        assert.ok(updated, 'no updated invoice returned');
+        assert.strictEqual(updated.id, invoice.id, 'update returned a different invoice');
+    });
+
+    test('update rejects for an unknown invoice id', async () => {
+        await assert.rejects(
+            () => client.invoice.update('00000000-0000-0000-0000-000000000000', {message: 'x'}),
+            /error=err_/i,
+        );
+    });
+
     test('bulkCreate then bulkStatus round-trip', async () => {
         const today = new Date().toISOString().split('T')[0];
         const due = new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0];

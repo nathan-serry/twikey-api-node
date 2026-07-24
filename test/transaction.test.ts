@@ -1,6 +1,5 @@
 import {describe, test} from "node:test";
 import * as assert from 'assert';
-import * as process from "node:process";
 import {getClient, importedMandate, noApiConfigured} from "./support/helpers";
 
 describe('Transaction', {skip: noApiConfigured}, async () => {
@@ -74,6 +73,26 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
         assert.ok(Array.isArray(entries), 'expected entries array');
         assert.ok(entries.length > 0, 'empty entries');
         assert.ok(entries[0].status, 'entry missing status');
+    });
+
+    test('update changes a transaction', async () => {
+        const mndtId = await importedMandate(client, 'UPD-');
+        const tx = await client.transaction.create({
+            mndtId,
+            message: 'To be updated',
+            amount: 60,
+        });
+        assert.ok(tx.id, 'transaction missing id');
+
+        const updated = await client.transaction.update(String(tx.id), {executionDate: '2099-01-01'});
+        assert.ok(updated.code == 204, 'no 204');
+    });
+
+    test('update rejects for an unknown transaction id', async () => {
+        await assert.rejects(
+            () => client.transaction.update('999999999', {executionDate: '2099-01-01'}),
+            /error=err_/i,
+        );
     });
 
     test('create then remove a transaction', async () => {
