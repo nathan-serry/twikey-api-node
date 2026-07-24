@@ -19,7 +19,7 @@ export class CustomerService extends BaseService {
     }
 
     async remove(ref: string): Promise<void> {
-        await this.delete(`/customer/${encodeURIComponent(ref)}`);
+        await this.httpDelete(`/customer/${encodeURIComponent(ref)}`);
     }
 
     async update(ref: string, request: Partial<CustomerRequest>): Promise<void> {

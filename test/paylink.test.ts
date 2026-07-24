@@ -69,6 +69,25 @@ describe('Paylink extended', {skip: noApiConfigured}, async () => {
         assert.ok(detail, 'no detail returned');
     });
 
+    test('remove deletes an unpaid paylink', async () => {
+        const link = await client.paylink.create({
+            ct: CT(),
+            ref: faker.git.commitSha({length: 8}),
+            firstname: faker.person.firstName(),
+            lastname: faker.person.lastName(),
+            message: faker.commerce.productName() + ' ' + Date.now(),
+            amount: Number(faker.commerce.price({min: 1, max: 500}))
+        });
+        assert.ok(link.id, 'paylink missing id');
+        await client.paylink.remove(link.id);
+        // Removal must take effect: the paylink should no longer be retrievable.
+        await assert.rejects(
+            () => client.paylink.detail(link.id),
+            /error=err_/i,
+            'removed paylink should no longer be retrievable',
+        );
+    });
+
     // A link can only be refunded once it has actually been paid, which can't be done
     // via the API. Point PAID_PAYLINK_ID at a real paid link in the beta environment.
     test('refund a paid paylink', {skip: !process.env.PAID_PAYLINK_ID}, async () => {

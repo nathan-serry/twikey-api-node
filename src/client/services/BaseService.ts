@@ -45,7 +45,7 @@ export class BaseService {
     };
   }
 
-  protected async delete(endpoint: string, params?: Record<string, any>, headers?: Record<string, string>): Promise<BaseResponse<any>> {
+  protected async httpDelete(endpoint: string, params?: Record<string, any>, headers?: Record<string, string>): Promise<BaseResponse<any>> {
     const response = await this.client.delete(endpoint, { params, headers });
     return {
       data: response.data,

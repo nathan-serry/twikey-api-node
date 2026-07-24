@@ -1,3 +1,4 @@
+import {FeedOptions} from "../src";
 import {describe, test} from "node:test";
 import * as assert from 'assert';
 import {faker} from '@faker-js/faker';
@@ -42,12 +43,11 @@ describe('Refund', {skip: noApiConfigured}, async () => {
         await client.refund.disableBeneficiary(iban, customerNumber);
     });
 
-    // The next two calls require a real, funded beta account to succeed end-to-end;
-    // they're kept here so the call shape/types are covered even without one.
-    test('addRefund creates a refund/transfer', async () => {
-        const ref = 'REFUND-' + faker.git.commitSha({length: 8});
+    // Full refund lifecycle. Creating a real refund needs a refund-capable/funded beta
+    // account (same precondition as collectRefund), so gate on REFUND_IBAN and skip cleanly
+    // otherwise. addRefund now returns the created refund, giving a real id to detail + remove.
+    test('lifecycle: addRefund -> detail -> remove', {skip: !process.env.REFUND_IBAN}, async () => {
         const customerNumber = faker.git.commitSha();
-        const iban = TEST_IBAN;
 
         // A customer record is created as a side effect of inviting them onto a mandate.
         await client.document.create({
@@ -67,7 +67,7 @@ describe('Refund', {skip: noApiConfigured}, async () => {
         await client.refund.addBeneficiary({
             customerNumber,
             name: faker.person.fullName(),
-            iban,
+            iban: TEST_IBAN,
             bic: TEST_BIC,
             address: faker.location.street(),
             city: faker.location.city(),
@@ -75,21 +75,64 @@ describe('Refund', {skip: noApiConfigured}, async () => {
             country: 'BE',
         });
 
-        await client.refund.addRefund({
-            ref,
+        const refund = await client.refund.addRefund({
+            ref: 'REFUND-' + faker.git.commitSha({length: 8}),
             customerNumber,
             message: 'Refund test',
             amount: 10,
-            iban,
+            iban: TEST_IBAN,
             bic: TEST_BIC,
             name: faker.person.fullName(),
         });
+        assert.ok(refund?.id, 'addRefund did not return a created refund id');
+
+        const fetched = await client.refund.detail(refund.id);
+        assert.strictEqual(Number(fetched.id), Number(refund.id), 'detail returned a different refund');
+
+        await client.refund.remove(refund.id);
+        await assert.rejects(
+            () => client.refund.detail(refund.id),
+            /error=err_/i,
+            'removed refund should no longer be retrievable',
+        );
     });
 
-    // Executes the pending refund batch as a SEPA credit transfer, which needs a
-    // configured originating/payout account on the creditor (err_invalid_iban otherwise).
-    // Gated on REFUND_IBAN until that account is set up Twikey-side.
-    test('collectRefund completes a refund batch', {skip: !process.env.REFUND_IBAN}, async () => {
-        await client.refund.collectRefund({ct: CT(), iban: process.env.REFUND_IBAN});
+    // collectRefund executes pending refunds as a SEPA credit-transfer batch; batchDetail then
+    // looks that batch up by its id (+pmtinfid). Gated on REFUND_IBAN; the lookup only runs if
+    // collectRefund actually produced a batch (nothing pending -> empty array -> nothing to detail).
+    test('collectRefund executes a batch, batchDetail looks it up', {skip: !process.env.REFUND_IBAN}, async () => {
+        const batches = await client.refund.collectRefund({ct: CT(), iban: process.env.REFUND_IBAN});
+        assert.ok(Array.isArray(batches), 'expected an array of credit-transfer batches');
+        if (batches.length === 0) return; // nothing pending to collect/detail
+        const batch = await client.refund.batchDetail({id: batches[0].id, pmtinfid: batches[0].pmtinfid});
+        assert.ok(batch, 'no batch status returned');
+        assert.strictEqual(Number(batch.id), Number(batches[0].id), 'batchDetail returned a different batch');
+    });
+
+    // Reading the credit-transfer (refund) feed needs no funded account: it drains the
+    // pending events and asserts the shape of any that come back.
+    test('feed yields refund entries', async () => {
+        const options: FeedOptions = {};
+        let hasRefunds = false;
+        const feed = client.refund.feed(options);
+        for await (const refund of feed) {
+            if (!hasRefunds) {
+                hasRefunds = true;
+                assert.ok(options.last_position);
+            }
+            assert.ok(refund);
+            assert.ok(refund.id);
+        }
+    });
+
+    // Always-on negative paths: a real API rejection (err_* code) for an unknown id proves the
+    // endpoint/verb are right, without needing a funded account. Tighten the regex to the exact
+    // code (likely err_not_found) once confirmed against a live run.
+    test('detail rejects for an unknown refund id', async () => {
+        await assert.rejects(() => client.refund.detail(999999999), /error=err_/i);
+    });
+
+    test('remove rejects for an unknown refund id', async () => {
+        await assert.rejects(() => client.refund.remove(999999999), /error=err_/i);
     });
 });

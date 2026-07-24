@@ -1,5 +1,6 @@
 import {BaseService} from "./BaseService";
 import {
+  DocumentActionRequest,
   DocumentQueryRequest,
   DocumentRequest,
   DocumentSignRequest,
@@ -14,10 +15,38 @@ import {
 import {FeedOptions, PdfResponse} from "../../models/Shared";
 
 export class DocumentService extends BaseService {
+  /**
+   * See https://www.twikey.com/api/#invite-a-customer
+   *
+   * Create a new mandate (certain period to be signed in) via a POST request to the API.
+   *
+   * This method sends the provided request payload to the corresponding endpoint
+   * and parses the JSON response into a response model. Typically used to initiate
+   * actions like inviting a customer, creating a mandate, or generating a payment link.
+   * Throws an error if the API response contains an error code or the request fails.
+   *
+   * @param request - An object representing the payload to send.
+   * @returns A structured response object representing the server's reply.
+   * @throws {TwikeyError} If the API returns an error or the request fails.
+   */
   async create(request: DocumentRequest): Promise<DocumentResponse> {
     return this.post("/invite", request).then(value => value.data);
   }
 
+  /**
+   * See https://www.twikey.com/api/#sign-a-mandate
+   *
+   * Create a new mandate (ready to be signed) via a POST request to the API.
+   *
+   * This method sends the provided request payload to the corresponding endpoint
+   * and parses the JSON response into a response model. Typically used to initiate
+   * actions like inviting a customer, creating a mandate, or generating a payment link.
+   * Throws an error if the API response contains an error code or the request fails.
+   *
+   * @param request - An object representing the payload to send.
+   * @returns A structured response object representing the server's reply.
+   * @throws {TwikeyError} If the API returns an error or the request fails.
+   */
   async sign(request: DocumentSignRequest): Promise<DocumentResponse> {
     return this.post("/sign", request).then(value => {
       const data = value.data;
@@ -27,16 +56,65 @@ export class DocumentService extends BaseService {
     });
   }
 
+  /**
+   * See https://www.twikey.com/api/#fetch-mandate-details
+   *
+   * Retrieves the details of a specific mandate by ID.
+   *
+   * This method queries the Twikey API for the latest details related to the mandate
+   * for the provided identifier. Typically used for querying status based on the
+   * mandate number.
+   *
+   * @param mndtId - The unique identifier of the mandate to fetch (mndtId).
+   * @param force - When true, forces a refresh of the mandate details rather than
+   *   returning a cached value. (optional)
+   * @returns A structured response object representing the server's reply.
+   * @throws {TwikeyError} If the API call fails or the identifier is invalid.
+   */
   async detail(mndtId: string, force?: boolean): Promise<DocumentResponse> {
     const params: Record<string, any> = { mndtId };
     if (force) params.force = true;
     return this.get(`/mandate/detail`, params).then(value => value.data);
   }
 
+  /**
+   * See https://www.twikey.com/api/#query-mandate
+   *
+   * Retrieve contract details by IBAN, customer number, email, or a combination of
+   * query parameters.
+   *
+   * This endpoint allows you to search for mandates based on specific identifiers.
+   * The result contains a list of contracts (mandates) that match the provided
+   * parameters.
+   *
+   * @param params - Query parameters like `iban`, `customerNumber`, `email`, `state`
+   *   or `page`. At least one of `iban`, `customerNumber` or `email` is required.
+   * @returns A list of mandate details that match the query.
+   * @throws {TwikeyError} If the request fails or the API returns an error.
+   */
   async query(params: DocumentQueryRequest): Promise<DocumentQueryResponse> {
     return this.get('/mandate/query', params).then(value => value.data);
   }
 
+  /**
+   * See https://www.twikey.com/api/#mandate-feed
+   *
+   * Fetches the latest mandate feed including new, updated, or cancelled mandates.
+   *
+   * This method retrieves events from Twikey since the last sync. These events
+   * concern mandates only. It's typically used to synchronize your CRM or ERP
+   * system with the current state on the Twikey platform. Can be triggered
+   * periodically or via webhook. Unlike Python's callback-based `DocumentFeed`
+   * handler, this returns an async generator you iterate with `for await`; the
+   * `IsNew`/`IsUpdated`/`IsCancelled` flags on each yielded message tell you which
+   * kind of event it is.
+   *
+   * @param options - Feed options: `includes` to request extra fields, and
+   *   `start_position` to resume from a previous `last_position`. (optional)
+   * @returns An async generator yielding one `DocumentFeedMessage` per event; the
+   *   feed is exhausted once no more messages are pending.
+   * @throws {TwikeyError} If the request to the feed endpoint fails.
+   */
   async *feed(options?: FeedOptions): AsyncGenerator<DocumentFeedMessage> {
 
     const formData = new URLSearchParams();
@@ -78,10 +156,27 @@ export class DocumentService extends BaseService {
     }
   }
 
+  /**
+   * Update the status of a mandate via a POST request to the API.
+   *
+   * @param mandateId - The unique identifier of the mandate (mndtId).
+   * @param status - The new status to set on the mandate.
+   * @returns Nothing.
+   * @throws {TwikeyError} If the API returns an error or the request fails.
+   */
   async updateStatus(mandateId: string, status: string): Promise<void> {
     await this.post(`/mandate/${mandateId}`, { status });
   }
 
+  /**
+   * See https://www.twikey.com/api/#retrieve-pdf
+   *
+   * Retrieve the PDF of a mandate via a GET request to the API.
+   *
+   * @param mndtId - A unique identifier for a mandate.
+   * @returns A structured response object containing the PDF content and filename.
+   * @throws {TwikeyError} If the request fails or the response is invalid.
+   */
   async pdf(mndtId: string): Promise<PdfResponse> {
     const response = await this.client.get(`/mandate/pdf?mndtId=${mndtId}`, {
       headers: { 'Accept': 'application/pdf' },
@@ -93,20 +188,94 @@ export class DocumentService extends BaseService {
     };
   }
 
+  /**
+   * See https://www.twikey.com/api/#upload-pdf
+   *
+   * Add a new mandate via a pdf during a POST request to the API.
+   *
+   * @param mndtId - The unique identifier of the mandate the PDF belongs to.
+   * @param pdfContent - The raw PDF file content to upload.
+   * @returns Nothing.
+   * @throws {TwikeyError} If the request fails or the response is invalid.
+   */
   async uploadPdf(mndtId: string, pdfContent: Buffer): Promise<void> {
     await this.client.post(`/mandate/pdf?mndtId=${mndtId}`, pdfContent, {
       headers: { 'Content-Type': 'application/pdf' }
     });
   }
 
+  /**
+   * See https://www.twikey.com/api/#cancel-agreements
+   *
+   * Sends a DELETE request to cancel a mandate on the Twikey API.
+   *
+   * This method allows the creditor to cancel/delete a resource by providing the
+   * unique ID and a reason for cancellation. This ensures Twikey's records are
+   * updated and, if applicable, forwards the cancellation to the debtor's bank.
+   * Cancellation can originate from the creditor, the creditor's bank, or the
+   * debtor's bank.
+   *
+   * @param mndtId - The unique identifier of the mandate to cancel (mndtId).
+   * @param rsn - The reason for cancelling the mandate. Can be a custom message or
+   *   an R-message code.
+   * @param notify - When true, the customer will be notified by email. (optional,
+   *   defaults to false)
+   * @returns Nothing.
+   * @throws {TwikeyError} If the request fails or the response contains an API
+   *   error code.
+   */
   async cancel(mndtId: string, rsn: string, notify = false): Promise<void> {
-    await this.delete('/mandate', { mndtId, rsn, notify });
+    await this.httpDelete('/mandate', { mndtId, rsn, notify });
   }
 
+  /**
+   * See https://www.twikey.com/api/#mandate-actions
+   *
+   * Trigger a specific action on an existing mandate.
+   *
+   * This endpoint allows initiating predefined actions related to a mandate, such
+   * as sending an invitation or reminder, or toggling B2B validation behavior. The
+   * action type must be explicitly provided in the request.
+   *
+   * @param mndtId - The unique identifier of the mandate to act on (mndtId).
+   * @param request - The action to perform. `type` is required (e.g. 'invite',
+   *   'reminder'); `reminder` selects which reminder (1-4) when `type` is
+   *   'reminder'.
+   * @returns Nothing.
+   * @throws {TwikeyError} If the API returns an error or the request fails.
+   */
+  async action(mndtId: string, request: DocumentActionRequest): Promise<void> {
+    await this.post(`/mandate/${mndtId}/action`, { mndtId, ...request });
+  }
+
+  /**
+   * See https://www.twikey.com/api/#update-mandate-details
+   *
+   * Send a POST request to update existing mandate details.
+   *
+   * This endpoint allows modifying mandate information such as customer data,
+   * mandate configuration, or linked references. Only provide parameters for
+   * fields you wish to update. Some fields may have special behavior or
+   * limitations depending on the object state.
+   *
+   * @param mndtId - The unique identifier of the mandate to update (mndtId).
+   * @param fields - An object representing the fields to update.
+   * @returns Nothing.
+   * @throws {TwikeyError} If the API returns an error or the request fails.
+   */
   async update(mndtId: string, fields: DocumentUpdateRequest): Promise<void> {
     await this.post('/mandate/update', { mndtId, ...fields });
   }
 
+  /**
+   * See https://www.twikey.com/api/#customer-access
+   *
+   * Create a new customer access link via a POST request to the API.
+   *
+   * @param mndtId - The unique identifier of the mandate to create the access link for.
+   * @returns A structured response object representing the server's reply.
+   * @throws {TwikeyError} If the API returns an error or the request fails.
+   */
   async customerAccess(mndtId: string): Promise<CustomerAccessResponse> {
     return this.post('/customeraccess', { mndtId }).then(value => value.data);
   }

@@ -59,3 +59,37 @@ describe('Document', {skip: noApiConfigured}, async () => {
         }
     });
 });
+
+describe('Document action', {skip: noApiConfigured}, async () => {
+
+    const client = getClient();
+
+    test('action sends a reminder on a prepared invite', async () => {
+        const document = await client.document.create({
+            ct: CT(),
+            email: faker.internet.email(),
+            firstname: faker.person.firstName(),
+            lastname: faker.person.lastName(),
+            l: 'nl',
+            country: 'BE',
+        });
+        assert.ok(document.mndtId, 'invite missing mndtId');
+        // A 204 (no throw) means the reminder was accepted. This beta creditor has email
+        // sending disabled, so tolerate err_email_disabled — the call is well-formed and
+        // reached the API; any other error is a real failure.
+        try {
+            await client.document.action(document.mndtId, {type: 'reminder', reminder: '1'});
+        } catch (e) {
+            assert.match((e as Error).message, /err_email_disabled/, 'action rejected for an unexpected reason');
+        }
+    });
+
+    // Negative path: an action on a non-existent mandate must be rejected by the API
+    // (a structured err_* error), proving the endpoint/verb are right — not silently accepted.
+    test('action rejects for a non-existent mandate', async () => {
+        await assert.rejects(
+            () => client.document.action('NON-EXISTENT-' + faker.git.commitSha({length: 8}), {type: 'reminder', reminder: '1'}),
+            /error=err_/i,
+        );
+    });
+});

@@ -1,6 +1,6 @@
 import {BaseService} from "./BaseService";
 import {CollectDetailRequest, CollectQueryRequest, CollectRequest} from "../../models/CollectRequest";
-import {CollectResponse} from "../../models/CollectResponse";
+import {CollectQueryResponse, CollectResponse} from "../../models/CollectResponse";
 
 export class CollectService extends BaseService {
 
@@ -21,6 +21,7 @@ export class CollectService extends BaseService {
   }
 
   async query(params: CollectQueryRequest): Promise<CollectResponse[]> {
-    return this.get("/collect/query", params).then(value => value.data);
+    // The API wraps the matches in a { collections: [...] } envelope; unwrap to the list.
+    return this.get("/collect/query", params).then(value => (value.data as CollectQueryResponse)?.collections ?? []);
   }
 }

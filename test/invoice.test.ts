@@ -76,6 +76,18 @@ describe('Invoice extended', {skip: noApiConfigured}, async () => {
         assert.ok(qr, 'no qr response');
     });
 
+    test('delete removes a created invoice', async () => {
+        const invoice = await makeInvoice();
+        assert.ok(invoice.id, 'invoice missing id');
+        await client.invoice.delete(invoice.id);
+        // Deleting must take effect: the invoice should no longer be retrievable.
+        await assert.rejects(
+            () => client.invoice.detail(invoice.id),
+            /error=err_/i,
+            'deleted invoice should no longer be retrievable',
+        );
+    });
+
     test('bulkCreate then bulkStatus round-trip', async () => {
         const today = new Date().toISOString().split('T')[0];
         const due = new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0];

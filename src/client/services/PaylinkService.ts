@@ -18,6 +18,25 @@ export class PaylinkService extends BaseService {
     await this.post("/payment/link/refund", request);
   }
 
+  /**
+   * See https://www.twikey.com/api/#remove-paymentlink
+   *
+   * Sends a DELETE request to remove a payment link that has not yet been sent to
+   * the bank on the Twikey API.
+   *
+   * This method allows the creditor to cancel/delete a resource by providing the
+   * unique ID. Typically used to delete/cancel an object like an agreement, an
+   * invoice, or a payment link.
+   *
+   * @param linkId - The unique identifier of the payment link to remove.
+   * @returns Nothing.
+   * @throws {TwikeyError} If the request fails or the response contains an API
+   *   error code.
+   */
+  async remove(linkId: number | string): Promise<void> {
+    await this.httpDelete("/payment/link", { id: linkId });
+  }
+
   async *feed(options?: FeedOptions): AsyncGenerator<PaylinkResponse> {
 
     const formData = new URLSearchParams();

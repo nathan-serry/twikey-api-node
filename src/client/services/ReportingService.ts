@@ -5,7 +5,8 @@ import {ReconciliationFile} from "../../models/ReportingResponse";
 export class ReportingService extends BaseService {
 
   async feed(): Promise<unknown> {
-    return this.get("/reporting").then(value => value.data);
+    // The endpoint wraps the rows in {Statements:[...]}; return the array.
+    return this.get("/reporting").then(value => value.data?.Statements ?? value.data);
   }
 
   async addAccount(payload: string): Promise<void> {
@@ -27,7 +28,8 @@ export class ReportingService extends BaseService {
   }
 
   async getFiles(): Promise<ReconciliationFile[]> {
-    return this.get("/files").then(value => value.data);
+    // The endpoint wraps the list in {Files:[...]}; return the array.
+    return this.get("/files").then(value => value.data?.Files ?? value.data);
   }
 
   async downloadFile(filename: string): Promise<Buffer> {

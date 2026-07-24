@@ -98,6 +98,25 @@ export class InvoiceService extends BaseService {
     await this.post(path, undefined, { "Content-Type": "application/json" });
   }
 
+  // the rename from delete -> httpdelete neccesary to keep api.twikey.com correspondance
+  /**
+   * See https://www.twikey.com/api/#delete-invoice
+   *
+   * Sends a DELETE request to delete an invoice on the Twikey API.
+   *
+   * This method allows the creditor to cancel/delete a resource by providing the
+   * unique ID. Typically used to delete/cancel an object like an agreement, an
+   * invoice, or a payment link.
+   *
+   * @param invoiceId - The unique identifier of the invoice to delete.
+   * @returns Nothing.
+   * @throws {TwikeyError} If the request fails or the response contains an API
+   *   error code.
+   */
+  async delete(invoiceId: string): Promise<void> {
+    await this.httpDelete(`/invoice/${invoiceId}`);
+  }
+
   async ubl(xmlBody: string | Buffer): Promise<InvoiceResponse> {
     return this.post("/invoice/ubl", xmlBody, { "Content-Type": "application/xml" }).then(value => value.data);
   }

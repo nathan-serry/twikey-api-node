@@ -6,26 +6,25 @@ describe('Reporting', {skip: noReportingConfigured}, async () => {
 
     const client = getReportingClient();
 
-    test('feed returns without error', async () => {
+    test('feed returns an array of statements', async () => {
         const result = await client.reporting.feed();
-        assert.ok(result !== undefined, 'feed returned undefined');
+        assert.ok(Array.isArray(result), 'feed did not return an array');
     });
 
-    test('getFiles returns without error', async () => {
+    test('getFiles returns an array of files', async () => {
         const files = await client.reporting.getFiles();
         assert.ok(Array.isArray(files), 'expected an array of files');
     });
 
-    test('generateReconciliation then optionally downloadFile', async () => {
+    test('generateReconciliation then download a file by name', async () => {
         await client.reporting.generateReconciliation({format: 'csv'});
 
         const files = await client.reporting.getFiles();
         assert.ok(Array.isArray(files), 'expected files array');
+        assert.ok(files.length > 0, 'no reconciliation files to download');
 
-        if (files.length > 0) {
-            const content = await client.reporting.downloadFile(files[0].name);
-            assert.ok(Buffer.isBuffer(content), 'expected a Buffer');
-            assert.ok(content.length > 0, 'downloaded file is empty');
-        }
+        const content = await client.reporting.downloadFile(files[0].name);
+        assert.ok(Buffer.isBuffer(content), 'expected a Buffer');
+        assert.ok(content.length > 0, 'downloaded file is empty');
     });
 });
