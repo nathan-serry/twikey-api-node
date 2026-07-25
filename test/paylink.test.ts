@@ -83,7 +83,7 @@ describe('Paylink extended', {skip: noApiConfigured}, async () => {
         // Removal must take effect: the paylink should no longer be retrievable.
         await assert.rejects(
             () => client.paylink.detail(link.id),
-            /error=err_/i,
+            {statusCode: 400, code: 'err_not_found'},
             'removed paylink should no longer be retrievable',
         );
     });

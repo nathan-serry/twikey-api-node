@@ -5,7 +5,7 @@ export interface BaseResponse<T> {
   data: T
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   headers: any
-  status?: number
+  statusCode: number
 }
 
 export class BaseService {
@@ -17,7 +17,8 @@ export class BaseService {
     const response: HttpResponse = await this.client.get(endpoint, { params, headers });
     return {
       data: response.data,
-      headers: response.headers
+      headers: response.headers,
+      statusCode: response.statusCode
     };
   }
 
@@ -26,7 +27,8 @@ export class BaseService {
     const response: HttpResponse = await this.client.post(endpoint, data, { headers });
     return {
       data: response.data,
-      headers: response.headers
+      headers: response.headers,
+      statusCode: response.statusCode
     };
   }
 
@@ -35,7 +37,7 @@ export class BaseService {
     return {
       data: response.data,
       headers: response.headers,
-      status: response.status
+      statusCode: response.statusCode
     };
   }
 
@@ -43,7 +45,8 @@ export class BaseService {
     const response = await this.client.patch(endpoint, data, { headers });
     return {
       data: response.data,
-      headers: response.headers
+      headers: response.headers,
+      statusCode: response.statusCode
     };
   }
 
@@ -51,7 +54,8 @@ export class BaseService {
     const response = await this.client.delete(endpoint, { params, headers });
     return {
       data: response.data,
-      headers: response.headers
+      headers: response.headers,
+      statusCode: response.statusCode
     };
   }
 

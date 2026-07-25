@@ -89,7 +89,7 @@ describe('Document action', {skip: noApiConfigured}, async () => {
     test('action rejects for a non-existent mandate', async () => {
         await assert.rejects(
             () => client.document.action('NON-EXISTENT-' + faker.git.commitSha({length: 8}), {type: 'reminder', reminder: '1'}),
-            /error=err_/i,
+            {statusCode: 400, code: 'err_not_found'},
         );
     });
 });

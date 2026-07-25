@@ -1,5 +1,6 @@
 import {describe, test} from "node:test";
 import * as assert from 'assert';
+import {TwikeyError} from "../src";
 import {getClient, importedMandate, noApiConfigured} from "./support/helpers";
 
 describe('Transaction', {skip: noApiConfigured}, async () => {
@@ -66,7 +67,7 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
                 entries = await client.transaction.bulkStatus(bulk.batchId);
                 break;
             } catch (e) {
-                if (attempt >= 4 || !/status=409/.test((e as Error).message)) throw e;
+                if (attempt >= 4 || (e as TwikeyError).statusCode !== 409) throw e;
                 await new Promise(r => setTimeout(r, 500));
             }
         }
@@ -85,13 +86,13 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
         assert.ok(tx.id, 'transaction missing id');
 
         const updated = await client.transaction.update(String(tx.id), {executionDate: '2099-01-01'});
-        assert.ok(updated.code == 204, 'no 204');
+        assert.strictEqual(updated.statusCode, 204, 'expected 204 No Content');
     });
 
     test('update rejects for an unknown transaction id', async () => {
         await assert.rejects(
             () => client.transaction.update('999999999', {executionDate: '2099-01-01'}),
-            /error=err_/i,
+            {statusCode: 400, code: 'err_no_transaction'},
         );
     });
 

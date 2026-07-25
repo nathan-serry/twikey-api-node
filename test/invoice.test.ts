@@ -83,7 +83,7 @@ describe('Invoice extended', {skip: noApiConfigured}, async () => {
         // Deleting must take effect: the invoice should no longer be retrievable.
         await assert.rejects(
             () => client.invoice.detail(invoice.id),
-            /error=err_/i,
+            {statusCode: 400, code: 'err_not_found'},
             'deleted invoice should no longer be retrievable',
         );
     });
@@ -99,7 +99,7 @@ describe('Invoice extended', {skip: noApiConfigured}, async () => {
     test('update rejects for an unknown invoice id', async () => {
         await assert.rejects(
             () => client.invoice.update('00000000-0000-0000-0000-000000000000', {message: 'x'}),
-            /error=err_/i,
+            {statusCode: 400, code: 'err_not_found'},
         );
     });
 

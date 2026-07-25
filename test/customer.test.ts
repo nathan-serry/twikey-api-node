@@ -55,6 +55,7 @@ describe('Customer', {skip: noApiConfigured}, async () => {
         // Removal must actually take effect: fetching the removed customer should fail.
         await assert.rejects(
             () => client.customer.fetch(customerNumber),
+            {statusCode: 400, code: 'err_not_found'},
             'removed customer should no longer be fetchable',
         );
     });

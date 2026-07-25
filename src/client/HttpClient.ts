@@ -1,6 +1,12 @@
 export class TwikeyError extends Error {
+  // statusCode, not status: the response models use `status` for business state strings.
+  readonly statusCode: number;
+  readonly code: string;
+
   constructor(statusCode: number, code: string, extra: string) {
     super(`status=${statusCode} error=${code}` + (extra ? ` extra=${extra}` : ''));
+    this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -15,7 +21,7 @@ export type HttpResponse = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   headers: Record<string, string>;
-  status: number;
+  statusCode: number;
 };
 
 export class FetchClient {
@@ -124,7 +130,7 @@ export class FetchClient {
       }
     }
 
-    return { data, headers: responseHeaders, status: response.status };
+    return { data, headers: responseHeaders, statusCode: response.status };
   }
 
   get(path: string, options: RequestOptions = {}): Promise<HttpResponse> {

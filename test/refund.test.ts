@@ -92,7 +92,7 @@ describe('Refund', {skip: noApiConfigured}, async () => {
         await client.refund.remove(refund.id);
         await assert.rejects(
             () => client.refund.detail(refund.id),
-            /error=err_/i,
+            {statusCode: 400, code: 'err_no_transaction'},
             'removed refund should no longer be retrievable',
         );
     });
@@ -125,14 +125,12 @@ describe('Refund', {skip: noApiConfigured}, async () => {
         }
     });
 
-    // Always-on negative paths: a real API rejection (err_* code) for an unknown id proves the
-    // endpoint/verb are right, without needing a funded account. Tighten the regex to the exact
-    // code (likely err_not_found) once confirmed against a live run.
+    // The API never uses 404: every client-side error is a 400 + err_* code.
     test('detail rejects for an unknown refund id', async () => {
-        await assert.rejects(() => client.refund.detail(999999999), /error=err_/i);
+        await assert.rejects(() => client.refund.detail(999999999), {statusCode: 400, code: 'err_no_transaction'});
     });
 
     test('remove rejects for an unknown refund id', async () => {
-        await assert.rejects(() => client.refund.remove(999999999), /error=err_/i);
+        await assert.rejects(() => client.refund.remove(999999999), {statusCode: 400, code: 'err_no_transaction'});
     });
 });

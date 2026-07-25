@@ -209,8 +209,8 @@ export class TransactionService extends BaseService {
    * @returns The HTTP status code (204 on success) and any response body.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
-  async update(transactionId: string, update: TransactionUpdateRequest): Promise<{ code?: number; data: any }> {
+  async update(transactionId: string, update: TransactionUpdateRequest): Promise<{ statusCode?: number; data: any }> {
     const res = await this.put("/transaction", { id: transactionId, ...update });
-    return { code: res.status, data: res.data };
+    return { statusCode: res.statusCode, data: res.data };
   }
 }
