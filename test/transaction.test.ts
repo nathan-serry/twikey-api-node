@@ -1,5 +1,6 @@
 import {describe, test} from "node:test";
 import * as assert from 'assert';
+import {faker} from '@faker-js/faker';
 import {TwikeyError} from "../src";
 import {getClient, importedMandate, noApiConfigured} from "./support/helpers";
 
@@ -112,6 +113,40 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
         assert.ok(
             !afterRemoval.Entries?.some(e => e.id === tx.id),
             'removed transaction should no longer be returned by /transaction/detail',
+        );
+    });
+
+    // A transaction can only be refunded once it has actually been paid, which can't be
+    // done via the API. Point PAID_TRANSACTION_ID at a real paid transaction in the beta
+    // environment (same precondition as PAID_PAYLINK_ID for the paylink refund test).
+    test('refund a paid transaction', {skip: !process.env.PAID_TRANSACTION_ID}, async () => {
+        const id = String(process.env.PAID_TRANSACTION_ID);
+        // Refunds aren't idempotent: the same transaction+amount is rejected as a duplicate
+        // on repeat runs. Either outcome proves the call is well-formed and accepted.
+        try {
+            const refunded = await client.transaction.refund({
+                id,
+                amount: 1,
+                message: 'Refund test ' + faker.git.commitSha({length: 8}),
+            });
+            // refund() must hand back the created credit transfer, not swallow the body:
+            // its id is the only handle on the transfer for client.refund.detail()/remove().
+            assert.ok(refunded, 'refund returned nothing');
+            assert.ok(refunded.id, 'refund did not return a created refund id');
+        } catch (e) {
+            assert.match((e as Error).message, /duplicate refund/i, 'refund rejected for an unexpected reason');
+        }
+    });
+
+    test('refund rejects for an unknown transaction id', async () => {
+        await assert.rejects(
+            () => client.transaction.refund({id: '999999999', amount: 1, message: 'Refund test'}),
+            (e: unknown) => {
+                const err = e as { statusCode?: number; code?: string };
+                assert.strictEqual(err.statusCode, 400, 'unexpected status code');
+                assert.ok(err.code, 'error carries no api error code');
+                return true;
+            },
         );
     });
 });

@@ -95,9 +95,29 @@ describe('Paylink extended', {skip: noApiConfigured}, async () => {
         // Refunds aren't idempotent: the same link+amount is rejected as a duplicate on
         // repeat runs. Either outcome proves the call is well-formed and accepted.
         try {
-            await client.paylink.refund({id, amount: 1, message: 'Refund test ' + faker.git.commitSha({length: 8})});
+            const refunded = await client.paylink.refund({
+                id,
+                amount: 1,
+                message: 'Refund test ' + faker.git.commitSha({length: 8}),
+            });
+            // refund() must hand back the created credit transfer, not swallow the body:
+            // its id is the only handle on the transfer for detail()/remove().
+            assert.ok(refunded, 'refund returned nothing');
+            assert.ok(refunded.id, 'refund did not return a created refund id');
         } catch (e) {
             assert.match((e as Error).message, /duplicate refund/i, 'refund rejected for an unexpected reason');
         }
+    });
+
+    test('refund rejects for an unknown paylink id', async () => {
+        await assert.rejects(
+            () => client.paylink.refund({id: 999999999, amount: 1, message: 'Refund test'}),
+            (e: unknown) => {
+                const err = e as { statusCode?: number; code?: string };
+                assert.strictEqual(err.statusCode, 400, 'unexpected status code');
+                assert.ok(err.code, 'error carries no api error code');
+                return true;
+            },
+        );
     });
 });

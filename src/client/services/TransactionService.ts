@@ -13,6 +13,7 @@ import {
   TransactionBulkResult,
   TransactionResponse,
 } from "../../models/TransactionResponse";
+import {RefundResponse} from "../../models/RefundResponse";
 import {FeedOptions} from "../../models/Shared";
 
 export class TransactionService extends BaseService {
@@ -74,11 +75,12 @@ export class TransactionService extends BaseService {
    * customer using the mandate IBAN or the one provided.
    *
    * @param request - Must include `id`, `message`, and `amount`. May include `ref`.
-   * @returns Nothing.
+   * @returns The created refund (parsed from the API's `Entries[0]`), including its
+   *   `id` — pass it to `client.refund.detail`/`remove` to follow up on the transfer.
    * @throws {TwikeyError} If the request fails or the API returns an error.
    */
-  async refund(request: TransactionRefundRequest): Promise<void> {
-    await this.post("/transaction/refund", request);
+  async refund(request: TransactionRefundRequest): Promise<RefundResponse> {
+    return this.post("/transaction/refund", request).then(value => value.data?.Entries?.[0] ?? value.data);
   }
 
   /**

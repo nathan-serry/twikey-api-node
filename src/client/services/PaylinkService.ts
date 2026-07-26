@@ -1,6 +1,7 @@
 import {BaseService} from "./BaseService";
 import {PaylinkRefundRequest, PaylinkRequest} from "../../models/PaylinkRequest";
 import {PaylinkResponse} from "../../models/PaylinkResponse";
+import {RefundResponse} from "../../models/RefundResponse";
 import {FeedOptions} from "../../models/Shared";
 
 export class PaylinkService extends BaseService {
@@ -14,8 +15,24 @@ export class PaylinkService extends BaseService {
     return this.get(path).then(value => value.data.Links?.[0] ?? value.data);
   }
 
-  async refund(request: PaylinkRefundRequest): Promise<void> {
-    await this.post("/payment/link/refund", request);
+  /**
+   * See https://www.twikey.com/api/#refund-paymentlink
+   *
+   * Creates a refund for a given (already paid) payment link via a POST request
+   * to the API. If the beneficiary account does not exist yet, it will be
+   * registered to the customer using the mandate IBAN or the one provided.
+   *
+   * @param request - Must include the payment link `id` and the `amount` to
+   *   refund. May include a `message` for the beneficiary.
+   * @returns The created refund, including its `id` — pass it to
+   *   `client.refund.detail`/`remove` to follow up on the transfer. The envelope
+   *   the API wraps it in is unwrapped here.
+   * @throws {TwikeyError} If the request fails or the API returns an error
+   *   (e.g. the link isn't paid, or the same refund was already requested).
+   */
+  async refund(request: PaylinkRefundRequest): Promise<RefundResponse> {
+    return this.post("/payment/link/refund", request)
+      .then(value => value.data?.Entries?.[0] ?? value.data?.Links?.[0] ?? value.data);
   }
 
   /**
