@@ -1,5 +1,12 @@
 import {BaseService} from "./BaseService";
-import {InvoiceActionRequest, InvoiceRequest, InvoiceUpdateRequest} from "../../models/InvoiceRequest";
+import {
+  InvoiceActionRequest,
+  InvoiceCreateRequest,
+  InvoiceDetailOptions,
+  InvoiceRequest,
+  InvoiceUpdateRequest,
+  UblUploadOptions,
+} from "../../models/InvoiceRequest";
 import {
   InvoiceBulkEntry,
   InvoiceBulkResult,
@@ -16,12 +23,22 @@ export class InvoiceService extends BaseService {
    *
    * Create a new invoice via a POST request to the API.
    *
-   * @param request - The invoice fields to send.
+   * @param request - The invoice fields, plus the optional `origin` and
+   *   `purpose` switches. Each is only sent when you set it; leaving one out
+   *   means the header is absent rather than sent as `false`.
    * @returns The created invoice.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
-  async create(request: InvoiceRequest): Promise<InvoiceResponse> {
-    return this.post("/invoice", request, { "Content-Type": "application/json" }).then(value => value.data);
+  async create(request: InvoiceCreateRequest): Promise<InvoiceResponse> {
+    // origin/purpose are headers, so keep them out of the JSON body.
+    const { origin, purpose, ...invoice } = request;
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (origin) headers["X-PARTNER"] = origin;
+    if (purpose) headers["X-Purpose"] = purpose;
+    if (invoice.manual) headers["X-MANUAL"] = "true";
+
+    return this.post("/invoice", invoice, headers).then(value => value.data);
   }
 
   /**
@@ -30,11 +47,18 @@ export class InvoiceService extends BaseService {
    * Retrieves the details of a specific invoice by ID.
    *
    * @param invoiceId - The unique invoice ID or invoice number.
+   * @param options - Extra information to include in the response; each enabled
+   *   flag adds one `include=` query parameter. (optional)
    * @returns The invoice details.
    * @throws {TwikeyError} If the API call fails or the identifier is invalid.
    */
-  async detail(invoiceId: string): Promise<InvoiceResponse> {
-    return this.get(`/invoice/${invoiceId}`).then(value => value.data);
+  async detail(invoiceId: string, options?: InvoiceDetailOptions): Promise<InvoiceResponse> {
+    // URLSearchParams, not a plain object: `include` is repeated once per value.
+    const includes = new URLSearchParams();
+    if (options?.lastpayment) includes.append("include", "lastpayment");
+    if (options?.meta) includes.append("include", "meta");
+    if (options?.customer) includes.append("include", "customer");
+    return this.get(`/invoice/${invoiceId}`, includes).then(value => value.data);
   }
 
   /**
@@ -171,14 +195,18 @@ export class InvoiceService extends BaseService {
    * Trigger a specific action on an existing invoice.
    *
    * @param invoiceId - The unique identifier of the invoice.
-   * @param request - The action to perform, plus any extra parameters.
-   * @returns Nothing.
+   * @param request - The action to perform. Which extra fields apply depends on
+   *   `type`; only the ones you set are sent.
+   * @returns Nothing. The API answers 204 on success.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async action(invoiceId: string, request: InvoiceActionRequest): Promise<void> {
-    const extra = Array.isArray(request.extra) ? request.extra.join('&') : '';
-    const path = `/invoice/${invoiceId}/action?type=${request.type}${extra ? '&' + extra : ''}`;
-    await this.post(path, undefined, { "Content-Type": "application/json" });
+    // Form-encoded body, matching the API docs and Python's `invoice.action()`.
+    // FetchClient turns the object into URLSearchParams for this content type,
+    // so every value is escaped and undefined fields are dropped.
+    await this.post(`/invoice/${encodeURIComponent(invoiceId)}/action`, request, {
+      "Content-Type": "application/x-www-form-urlencoded",
+    });
   }
 
   // the rename from delete -> httpdelete neccesary to keep api.twikey.com correspondance
@@ -206,11 +234,16 @@ export class InvoiceService extends BaseService {
    * Add a new invoice via a UBL file during a POST request to the API.
    *
    * @param xmlBody - The UBL invoice as a raw XML string or buffer.
+   * @param options - Optional headers: `manual` (`X-MANUAL`) and `invoiceId`
+   *   (`X-INVOICE-ID`). Only the ones you set are sent.
    * @returns The created invoice.
    * @throws {TwikeyError} If the request fails or the response is invalid.
    */
-  async ubl(xmlBody: string | Buffer): Promise<InvoiceResponse> {
-    return this.post("/invoice/ubl", xmlBody, { "Content-Type": "application/xml" }).then(value => value.data);
+  async ubl(xmlBody: string | Buffer, options?: UblUploadOptions): Promise<InvoiceResponse> {
+    const headers: Record<string, string> = { "Content-Type": "application/xml" };
+    if (options?.manual) headers["X-MANUAL"] = "true";
+    if (options?.invoiceId) headers["X-INVOICE-ID"] = options.invoiceId;
+    return this.post("/invoice/ubl", xmlBody, headers).then(value => value.data);
   }
 
   /**

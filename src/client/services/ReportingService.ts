@@ -24,7 +24,8 @@ export class ReportingService extends BaseService {
 
   async generateReconciliation(request: ReconciliationGenerateRequest): Promise<void> {
     const { sdd = false, paylink = false, format } = request;
-    await this.post(`/files?sdd=${sdd}&paylink=${paylink}&format=${format}`);
+    const params = new URLSearchParams({ sdd: String(sdd), paylink: String(paylink), format });
+    await this.post(`/files?${params}`);
   }
 
   async getFiles(): Promise<ReconciliationFile[]> {

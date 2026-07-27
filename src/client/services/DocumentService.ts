@@ -178,7 +178,8 @@ export class DocumentService extends BaseService {
    * @throws {TwikeyError} If the request fails or the response is invalid.
    */
   async pdf(mndtId: string): Promise<PdfResponse> {
-    const response = await this.client.get(`/mandate/pdf?mndtId=${mndtId}`, {
+    const params = new URLSearchParams({ mndtId });
+    const response = await this.client.get(`/mandate/pdf?${params}`, {
       headers: { 'Accept': 'application/pdf' },
       responseType: 'arraybuffer'
     });
@@ -195,11 +196,14 @@ export class DocumentService extends BaseService {
    *
    * @param mndtId - The unique identifier of the mandate the PDF belongs to.
    * @param pdfContent - The raw PDF file content to upload.
+   * @param bankSignature - Only used for B2B mandates. (optional)
    * @returns Nothing.
    * @throws {TwikeyError} If the request fails or the response is invalid.
    */
-  async uploadPdf(mndtId: string, pdfContent: Buffer): Promise<void> {
-    await this.client.post(`/mandate/pdf?mndtId=${mndtId}`, pdfContent, {
+  async uploadPdf(mndtId: string, pdfContent: Buffer, bankSignature?: boolean): Promise<void> {
+    const params = new URLSearchParams({ mndtId });
+    if (bankSignature !== undefined) params.append('bankSignature', String(bankSignature));
+    await this.client.post(`/mandate/pdf?${params}`, pdfContent, {
       headers: { 'Content-Type': 'application/pdf' }
     });
   }

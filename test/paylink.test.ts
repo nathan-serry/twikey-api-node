@@ -92,32 +92,36 @@ describe('Paylink extended', {skip: noApiConfigured}, async () => {
     // via the API. Point PAID_PAYLINK_ID at a real paid link in the beta environment.
     test('refund a paid paylink', {skip: !process.env.PAID_PAYLINK_ID}, async () => {
         const id = Number(process.env.PAID_PAYLINK_ID);
-        // Refunds aren't idempotent: the same link+amount is rejected as a duplicate on
-        // repeat runs. Either outcome proves the call is well-formed and accepted.
-        try {
-            const refunded = await client.paylink.refund({
-                id,
-                amount: 1,
-                message: 'Refund test ' + faker.git.commitSha({length: 8}),
-            });
-            // refund() must hand back the created credit transfer, not swallow the body:
-            // its id is the only handle on the transfer for detail()/remove().
-            assert.ok(refunded, 'refund returned nothing');
-            assert.ok(refunded.id, 'refund did not return a created refund id');
-        } catch (e) {
-            assert.match((e as Error).message, /duplicate refund/i, 'refund rejected for an unexpected reason');
-        }
+        // Refunds aren't idempotent: the same link+amount is rejected as a duplicate. Vary
+        // the amount so each run creates a genuinely new refund instead of being bounced.
+        const amount = Number((Math.random() * 0.9 + 0.1).toFixed(2));
+
+        const before = await client.paylink.detail(id, true);
+        assert.strictEqual(before.state, 'paid', 'PAID_PAYLINK_ID must point at a paid link');
+
+        const ack = await client.paylink.refund({id, amount, message: 'Refund test ' + faker.git.commitSha({length: 8})});
+        // The API echoes the request rather than describing the transfer: `id` here is the
+        // payment link's, NOT a refund id. Asserting that explicitly so nobody "fixes" the
+        // return type back to something transfer-shaped.
+        assert.ok(ack, 'refund returned nothing');
+        assert.strictEqual(ack.id, id, 'refund ack should echo the paylink id');
+        assert.strictEqual(ack.amount, amount, 'refund ack should echo the amount');
+
+        // The refund itself is only observable through detail(include=refunds).
+        const after = await client.paylink.detail(id, true);
+        assert.strictEqual(
+            after.refunds?.length, (before.refunds?.length ?? 0) + 1,
+            'refund was acknowledged but no new refund appeared on the link',
+        );
+        const created = after.refunds?.at(-1);
+        assert.strictEqual(created?.amount, amount, 'newest refund has the wrong amount');
+        assert.ok(created?.id, 'created refund carries no id');
     });
 
     test('refund rejects for an unknown paylink id', async () => {
         await assert.rejects(
             () => client.paylink.refund({id: 999999999, amount: 1, message: 'Refund test'}),
-            (e: unknown) => {
-                const err = e as { statusCode?: number; code?: string };
-                assert.strictEqual(err.statusCode, 400, 'unexpected status code');
-                assert.ok(err.code, 'error carries no api error code');
-                return true;
-            },
+            {statusCode: 400, code: 'err_not_found'},
         );
     });
 });

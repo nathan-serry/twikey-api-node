@@ -1,7 +1,6 @@
 import {BaseService} from "./BaseService";
 import {PaylinkRefundRequest, PaylinkRequest} from "../../models/PaylinkRequest";
-import {PaylinkResponse} from "../../models/PaylinkResponse";
-import {RefundResponse} from "../../models/RefundResponse";
+import {PaylinkRefundResponse, PaylinkResponse} from "../../models/PaylinkResponse";
 import {FeedOptions} from "../../models/Shared";
 
 export class PaylinkService extends BaseService {
@@ -11,8 +10,9 @@ export class PaylinkService extends BaseService {
   }
 
   async detail(plId: number | string, includeRefunds = false): Promise<PaylinkResponse> {
-    const path = `/payment/link?id=${plId}${includeRefunds ? '&include=refunds' : ''}`;
-    return this.get(path).then(value => value.data.Links?.[0] ?? value.data);
+    const params = new URLSearchParams({ id: String(plId) });
+    if (includeRefunds) params.append('include', 'refunds');
+    return this.get(`/payment/link?${params}`).then(value => value.data.Links?.[0] ?? value.data);
   }
 
   /**
@@ -22,17 +22,26 @@ export class PaylinkService extends BaseService {
    * to the API. If the beneficiary account does not exist yet, it will be
    * registered to the customer using the mandate IBAN or the one provided.
    *
+   * The response is a bare acknowledgement — `{id, amount, msg}` with no
+   * envelope — and its `id` is the **payment link** id, not the created
+   * refund's. The refund does get an id of its own, but the API only hands it
+   * back via `detail(id, true)`:
+   *
+   * ```ts
+   * await client.paylink.refund({id: linkId, amount: 5});
+   * const {refunds} = await client.paylink.detail(linkId, true);
+   * const refundId = refunds?.at(-1)?.id;   // e.g. 're_EqBdFXPMFgRL429DZCXUJ'
+   * ```
+   *
    * @param request - Must include the payment link `id` and the `amount` to
    *   refund. May include a `message` for the beneficiary.
-   * @returns The created refund, including its `id` — pass it to
-   *   `client.refund.detail`/`remove` to follow up on the transfer. The envelope
-   *   the API wraps it in is unwrapped here.
+   * @returns The API's acknowledgement, echoing the payment link id and the
+   *   refunded amount.
    * @throws {TwikeyError} If the request fails or the API returns an error
    *   (e.g. the link isn't paid, or the same refund was already requested).
    */
-  async refund(request: PaylinkRefundRequest): Promise<RefundResponse> {
-    return this.post("/payment/link/refund", request)
-      .then(value => value.data?.Entries?.[0] ?? value.data?.Links?.[0] ?? value.data);
+  async refund(request: PaylinkRefundRequest): Promise<PaylinkRefundResponse> {
+    return this.post("/payment/link/refund", request).then(value => value.data);
   }
 
   /**

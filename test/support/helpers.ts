@@ -47,6 +47,25 @@ export const testPdfPath = path.join(__dirname, '..', 'fixtures', 'empty.pdf');
 export const testPdfBuffer = fs.readFileSync(testPdfPath);
 export const testPdfBase64 = testPdfBuffer.toString('base64');
 
+const ublTemplate = fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'invoice.ubl.xml'), 'utf8');
+
+// Builds a UBL invoice from the fixture template. The invoice number must be unique
+// per run: uploading a number that already exists returns the existing invoice instead
+// of creating one, which would silently invalidate any assertion on the result.
+export const ublInvoice = (overrides: { number?: string; amount?: string } = {}): string => {
+    const today = new Date();
+    const due = new Date(new Date().setMonth(today.getMonth() + 1));
+    const values: Record<string, string> = {
+        NUMBER: overrides.number ?? 'UBL-' + faker.git.commitSha({length: 10}),
+        ISSUE_DATE: today.toISOString().split('T')[0],
+        DUE_DATE: due.toISOString().split('T')[0],
+        CUSTOMER_NUMBER: 'UBLCUST-' + faker.git.commitSha({length: 8}),
+        EMAIL: faker.internet.email(),
+        AMOUNT: overrides.amount ?? '42.00',
+    };
+    return ublTemplate.replace(/{{(\w+)}}/g, (_, key) => values[key]);
+};
+
 // Signs an imported (already-signed) mandate so tests have a valid mndtId to work with.
 export const importedMandate = async (client: TwikeyClient, suffix = ''): Promise<string> => {
     const mandateNumber = 'IMPORT-' + suffix + faker.git.commitSha({length: 8});

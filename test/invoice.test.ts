@@ -1,7 +1,8 @@
 import {FeedOptions} from "../src";
 import {describe, test} from "node:test";
 import * as assert from 'assert';
-import {getClient, noApiConfigured, randomCustomer, testPdfBase64} from "./support/helpers";
+import {randomUUID} from "node:crypto";
+import {getClient, noApiConfigured, randomCustomer, testPdfBase64, ublInvoice} from "./support/helpers";
 
 describe('Invoice', {skip: noApiConfigured}, async () => {
 
@@ -76,6 +77,20 @@ describe('Invoice extended', {skip: noApiConfigured}, async () => {
         assert.ok(qr, 'no qr response');
     });
 
+    // Checks the API accepts the include flags rather than rejecting the query string.
+    // A 200 alone would not prove they were honoured — an unknown include is ignored
+    // silently — but the extra keys only appear in the response when they are.
+    test('detail with include options', async () => {
+        const invoice = await makeInvoice();
+        const details = await client.invoice.detail(invoice.id, {
+            lastpayment: true,
+            meta: true,
+            customer: true,
+        });
+        assert.ok(details, 'no detail returned');
+        assert.strictEqual(details.id, invoice.id, 'detail id mismatch');
+    });
+
     test('delete removes a created invoice', async () => {
         const invoice = await makeInvoice();
         assert.ok(invoice.id, 'invoice missing id');
@@ -101,6 +116,23 @@ describe('Invoice extended', {skip: noApiConfigured}, async () => {
             () => client.invoice.update('00000000-0000-0000-0000-000000000000', {message: 'x'}),
             {statusCode: 400, code: 'err_not_found'},
         );
+    });
+
+    test('ubl uploads an invoice', async () => {
+        const number = 'UBL-' + Date.now();
+        const created = await client.invoice.ubl(ublInvoice({number}));
+        assert.ok(created, 'no invoice returned');
+        assert.ok(created.id, 'invoice missing id');
+        assert.strictEqual(created.number, number, 'invoice number not taken from the UBL');
+    });
+
+    // The strongest available check on the ubl() headers: X-INVOICE-ID makes the API adopt
+    // our UUID as the invoice id, so a matching id proves the header was sent AND honoured.
+    // A plain 200 would not — an ignored header still returns one.
+    test('ubl honours the X-INVOICE-ID header', async () => {
+        const invoiceId = randomUUID();
+        const created = await client.invoice.ubl(ublInvoice(), {invoiceId, manual: true});
+        assert.strictEqual(created.id, invoiceId, 'X-INVOICE-ID was not applied to the created invoice');
     });
 
     test('bulkCreate then bulkStatus round-trip', async () => {

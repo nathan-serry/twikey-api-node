@@ -141,12 +141,7 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
     test('refund rejects for an unknown transaction id', async () => {
         await assert.rejects(
             () => client.transaction.refund({id: '999999999', amount: 1, message: 'Refund test'}),
-            (e: unknown) => {
-                const err = e as { statusCode?: number; code?: string };
-                assert.strictEqual(err.statusCode, 400, 'unexpected status code');
-                assert.ok(err.code, 'error carries no api error code');
-                return true;
-            },
+            {statusCode: 400, code: 'err_no_transaction'},
         );
     });
 });

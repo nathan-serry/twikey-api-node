@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Minimal UBL 2.1 invoice accepted by POST /creditor/invoice/ubl.
+
+  Two things are load-bearing; drop either and the upload stops working:
+
+  1. cac:PostalAddress on the customer party. Without it the API returns
+     500 error_system rather than a validation error, so an incomplete
+     fixture looks like an outage.
+  2. All four amounts in cac:LegalMonetaryTotal. PayableAmount alone is
+     rejected with err_invalid_amount "No payable amount element" — the
+     message names the one element that *is* present, so trust this
+     comment over the error text.
+
+  cac:TaxTotal, cbc:UBLVersionID, cbc:InvoiceTypeCode, the supplier party
+  and invoice lines are all optional here — kept out to keep the fixture
+  minimal. Placeholders are substituted by ublInvoice() in support/helpers.ts.
+-->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+  <cbc:ID>{{NUMBER}}</cbc:ID>
+  <cbc:IssueDate>{{ISSUE_DATE}}</cbc:IssueDate>
+  <cbc:DueDate>{{DUE_DATE}}</cbc:DueDate>
+  <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+  <cac:AccountingCustomerParty>
+    <cbc:SupplierAssignedAccountID>{{CUSTOMER_NUMBER}}</cbc:SupplierAssignedAccountID>
+    <cac:Party>
+      <cac:PartyName>
+        <cbc:Name>UBL Test Customer BV</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Klantstraat 2</cbc:StreetName>
+        <cbc:CityName>Brugge</cbc:CityName>
+        <cbc:PostalZone>8000</cbc:PostalZone>
+        <cac:Country>
+          <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:Contact>
+        <cbc:Email>{{EMAIL}}</cbc:Email>
+      </cac:Contact>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="EUR">{{AMOUNT}}</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="EUR">{{AMOUNT}}</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="EUR">{{AMOUNT}}</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="EUR">{{AMOUNT}}</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+</Invoice>
