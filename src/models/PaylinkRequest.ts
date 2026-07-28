@@ -39,6 +39,25 @@ export interface PaylinkRequest extends BaseInfo {
 }
 
 /**
+ * See https://www.twikey.com/api/#status-paymentlink
+ *
+ * PaylinkDetailOptions selects the extra information to include in a
+ * `PaylinkService.detail()` / `detailByRef()` response. Each enabled flag adds
+ * one `include=` query parameter.
+ *
+ * These are the only two includes this endpoint recognises.
+ *
+ * Attributes:
+ *   refunds - Include the refunds recorded against the link, as a `refunds` array.
+ *   meta - Include meta information about the link (whether it is still active, the
+ *     method it was paid with, ...) as a nested `meta` object.
+ */
+export interface PaylinkDetailOptions {
+    refunds?: boolean;
+    meta?: boolean;
+}
+
+/**
  * See https://www.twikey.com/api/#refund-paymentlink
  *
  * PaylinkRefundRequest holds the fields to refund the full or partial amount

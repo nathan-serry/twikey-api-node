@@ -1,5 +1,5 @@
 import {BaseService} from "./BaseService";
-import {PaylinkRefundRequest, PaylinkRequest} from "../../models/PaylinkRequest";
+import {PaylinkDetailOptions, PaylinkRefundRequest, PaylinkRequest} from "../../models/PaylinkRequest";
 import {PaylinkRefundResponse, PaylinkResponse} from "../../models/PaylinkResponse";
 import {FeedOptions} from "../../models/Shared";
 
@@ -24,14 +24,47 @@ export class PaylinkService extends BaseService {
    * Retrieves a payment link's status by ID.
    *
    * @param plId - The unique identifier of the payment link.
-   * @param includeRefunds - When true, includes the link's recorded refunds
-   *   (`include=refunds`) in the response. (optional, defaults to false)
+   * @param options - Extra information to include in the response; each enabled flag
+   *   adds one `include=` query parameter. A bare `true` is accepted as shorthand for
+   *   `{refunds: true}`, which is the older form of this argument. (optional)
    * @returns The payment link details.
    * @throws {TwikeyError} If the API call fails or the identifier is invalid.
    */
-  async detail(plId: number | string, includeRefunds = false): Promise<PaylinkResponse> {
-    const params = new URLSearchParams({ id: String(plId) });
-    if (includeRefunds) params.append('include', 'refunds');
+  async detail(plId: number | string, options?: boolean | PaylinkDetailOptions): Promise<PaylinkResponse> {
+    return this.fetchLink(new URLSearchParams({ id: String(plId) }), options);
+  }
+
+  /**
+   * See https://www.twikey.com/api/#status-paymentlink
+   *
+   * Retrieves a payment link's status by *your* reference — the `ref` you passed to
+   * `create()` — rather than by Twikey's numeric id.
+   *
+   * The same endpoint backs both lookups; it accepts either an `id` or a `ref`
+   * parameter.
+   *
+   * @param ref - The reference the payment link was created with.
+   * @param options - Extra information to include in the response; each enabled flag
+   *   adds one `include=` query parameter. (optional)
+   * @returns The payment link details.
+   * @throws {TwikeyError} If the API call fails or no link carries that reference.
+   */
+  async detailByRef(ref: string, options?: PaylinkDetailOptions): Promise<PaylinkResponse> {
+    return this.fetchLink(new URLSearchParams({ ref }), options);
+  }
+
+  /**
+   * Shared by `detail()` and `detailByRef()`, which differ only in how they identify
+   * the link. `include` is repeated once per value, so the caller passes
+   * URLSearchParams rather than a plain object.
+   */
+  private async fetchLink(params: URLSearchParams, options?: boolean | PaylinkDetailOptions): Promise<PaylinkResponse> {
+    // A bare boolean is the pre-existing `detail(id, true)` signature, kept working.
+    const includes: PaylinkDetailOptions = typeof options === 'boolean'
+        ? { refunds: options }
+        : options ?? {};
+    if (includes.refunds) params.append('include', 'refunds');
+    if (includes.meta) params.append('include', 'meta');
     return this.get(`/payment/link?${params}`).then(value => value.data.Links?.[0] ?? value.data);
   }
 

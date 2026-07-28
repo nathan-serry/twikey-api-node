@@ -1,11 +1,8 @@
 /**
  * The reply from creating (`create()`) or fetching (`detail()`) a payment link.
  *
- * Mirrors Python's `CreatedPaylinkResponse` and `Paylink`
- * (`twikey/model/paylink_response.py`) — Node uses one shared shape where
- * Python has two separate classes. Python's `Paylink` additionally carries
- * `ct`, and nested `customer`/`meta`/`time` objects (populated when fetched
- * with `include=meta`) that this type doesn't expose.
+ * One shared shape covers both directions: `create()` returns the `url` and no `state`,
+ * while a fetch returns the `state` and `ct` but no `url`.
  *
  * Attributes:
  *   id - Payment link ID.
@@ -13,9 +10,13 @@
  *   msg - Message shown to the customer.
  *   amount - Amount to be paid.
  *   ref - Reference of the payment link.
- *   state - State of the payment link. Only present when fetched via `detail()`.
+ *   ct - Contract template the link belongs to. Sent when fetched, not on `create()`.
+ *   state - State of the payment link, e.g. 'created' or 'paid'. Only present when
+ *     fetched via `detail()`.
+ *   meta - Meta information about the link. Present only when fetched with
+ *     `{meta: true}` (`include=meta`).
  *   refunds - Refunds recorded against the link. Present only when fetched
- *     with `detail(id, true)` (`include=refunds`).
+ *     with `{refunds: true}` (`include=refunds`).
  */
 export interface PaylinkResponse {
     id: number;
@@ -23,8 +24,29 @@ export interface PaylinkResponse {
     msg: string;
     amount: number;
     ref: string;
+    ct?: number;
     state?: string;
+    meta?: PaylinkMeta;
     refunds?: PaylinkRefundEntry[];
+}
+
+/**
+ * Meta information about a payment link, returned in `PaylinkResponse.meta` when
+ * fetched with `{meta: true}` (`include=meta`).
+ *
+ * Only `active` was present on every link observed; `paymentMethod` appears once a
+ * link has been paid. Other link types may carry further keys (e.g. direct-debit or
+ * transaction details), hence the index signature rather than a closed shape.
+ *
+ * Attributes:
+ *   active - Whether the link is still payable.
+ *   paymentMethod - The method the customer paid with, e.g. 'mastercard'.
+ *   [key] - Further meta fields the API may return, not individually typed.
+ */
+export interface PaylinkMeta {
+    active?: boolean;
+    paymentMethod?: string;
+    [key: string]: unknown;
 }
 
 /**

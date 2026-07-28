@@ -69,6 +69,49 @@ describe('Paylink extended', {skip: noApiConfigured}, async () => {
         assert.ok(detail, 'no detail returned');
     });
 
+    // `include=meta` has an observable effect, so assert on the effect rather than on a 200:
+    // this API silently ignores includes it does not recognise and still answers 200.
+    test('detail with the meta include adds a meta object', async () => {
+        const link = await client.paylink.create({
+            ct: CT(),
+            ref: faker.git.commitSha({length: 8}),
+            firstname: faker.person.firstName(),
+            lastname: faker.person.lastName(),
+            message: faker.commerce.productName() + ' ' + Date.now(),
+            amount: Number(faker.commerce.price({min: 1, max: 500}))
+        });
+
+        const without = await client.paylink.detail(link.id);
+        assert.strictEqual(without.meta, undefined, 'meta must not appear unless asked for');
+
+        const withMeta = await client.paylink.detail(link.id, {meta: true});
+        assert.ok(withMeta.meta, 'include=meta did not add a meta object');
+        assert.strictEqual(withMeta.meta.active, true, 'a fresh link should still be active');
+        // `ct` comes back on a fetch even though create() does not send it.
+        assert.strictEqual(withMeta.ct, CT(), 'detail should report the contract template');
+    });
+
+    test('detailByRef resolves a link by the reference it was created with', async () => {
+        const ref = 'PLREF' + faker.git.commitSha({length: 8});
+        const link = await client.paylink.create({
+            ct: CT(),
+            ref,
+            firstname: faker.person.firstName(),
+            lastname: faker.person.lastName(),
+            message: faker.commerce.productName() + ' ' + Date.now(),
+            amount: Number(faker.commerce.price({min: 1, max: 500}))
+        });
+
+        const byRef = await client.paylink.detailByRef(ref);
+        assert.strictEqual(byRef.id, link.id, 'ref lookup returned a different link');
+        assert.strictEqual(byRef.ref, ref, 'ref lookup returned the wrong reference');
+
+        // The includes work on this lookup too, not only on the id one.
+        const byRefWithMeta = await client.paylink.detailByRef(ref, {meta: true, refunds: true});
+        assert.strictEqual(byRefWithMeta.id, link.id);
+        assert.ok(byRefWithMeta.meta, 'include=meta did not apply to the ref lookup');
+    });
+
     test('remove deletes an unpaid paylink', async () => {
         const link = await client.paylink.create({
             ct: CT(),
