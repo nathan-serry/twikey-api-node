@@ -5,9 +5,15 @@ import {ReconciliationFile} from "../../models/ReportingResponse";
 export class ReportingService extends BaseService {
 
   /**
-   * Fetch the reporting feed of previously imported bank-statement entries.
+   * Fetch the reporting feed of previously imported bank-statement entries via
+   * a GET request to the API.
    *
-   * @returns The reported statement entries.
+   * This retrieves the statement entries that have been imported so far
+   * through `addAccount()`/`addItems()`, so it can be used to confirm an
+   * import landed or to re-read what was reported earlier.
+   *
+   * @returns The reported statement entries, unwrapped from the API's
+   *   `{Statements: […]}` envelope.
    * @throws {TwikeyError} If the request fails.
    */
   async feed(): Promise<unknown> {
@@ -19,13 +25,16 @@ export class ReportingService extends BaseService {
    * Import a raw bank-statement (CODA/MT940/camt) payload via a POST request
    * to the API.
    *
-   * The payload is plain text. Its first line is `twikey:<iban>` followed, on
-   * that same line, by the column header — e.g.
-   * `twikey:BE123… name;msg;amount;date;iban;bic` — and then one data row per
-   * entry, with the amount in cents. A column header on a line of its own is
-   * rejected as `invalid_file`.
+   * The payload is plain text, sent with a `text/plain` content type. Its
+   * first line is `twikey:<iban>` followed, on that same line, by the column
+   * header — e.g. `twikey:BE123… name;msg;amount;date;iban;bic` — and then one
+   * data row per entry, with the amount in cents. A column header on a line
+   * of its own, or a form-encoded body, is rejected as `invalid_file`. Use
+   * this when you already have a fully-formed statement payload to hand;
+   * `addItems()` builds the same shape of payload from structured entries.
    *
-   * @param payload - The raw statement content to import.
+   * @param payload - The raw statement content to import, already formatted
+   *   as described above.
    * @returns Nothing.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
@@ -36,13 +45,17 @@ export class ReportingService extends BaseService {
   /**
    * Import structured bank-statement entries via a POST request to the API.
    *
-   * Builds the same plain-text payload `addAccount()` expects: `twikey:<iban>`
-   * with the column header on that same first line, then one data row per
-   * entry (`name;msg;amount;date;iban;bic`). Amounts are given in units and
-   * sent in cents.
+   * Builds the same plain-text payload `addAccount()` expects and sends it
+   * with a `text/plain` content type: `twikey:<iban>` with the column header
+   * on that same first line, then one data row per entry
+   * (`name;msg;amount;date;iban;bic`). The column header must stay on that
+   * first line and the body must not be form-encoded — either mistake is
+   * rejected as `invalid_file`. Each entry's `amount` is given in units (e.g.
+   * `12.34`) and converted to cents in the outgoing row.
    *
-   * @param iban - The account IBAN the entries belong to.
-   * @param items - The statement entries to import.
+   * @param iban - The account IBAN the entries belong to; written into the
+   *   `twikey:<iban>` header line.
+   * @param items - The statement entries to import, one per data row.
    * @returns Nothing.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
@@ -55,11 +68,15 @@ export class ReportingService extends BaseService {
   }
 
   /**
-   * Generate a reconciliation file via a POST request to the API. The
-   * generated file can then be listed with `getFiles()` and retrieved with
-   * `downloadFile()`.
+   * Generate a reconciliation file via a POST request to the API.
    *
-   * @param request - The reconciliation parameters (`sdd`, `paylink`, `format`).
+   * The file is built asynchronously from the creditor's existing collections
+   * and does not come back in the response; poll `getFiles()` afterwards for
+   * it to appear, then retrieve it with `downloadFile()`.
+   *
+   * @param request - The reconciliation parameters: `sdd` to include SEPA
+   *   Direct Debit collections, `paylink` to include payment link
+   *   collections, and `format` for the file format to generate (e.g. `csv`).
    * @returns Nothing.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
@@ -70,9 +87,13 @@ export class ReportingService extends BaseService {
   }
 
   /**
-   * List the generated reconciliation files.
+   * List the generated reconciliation files via a GET request to the API.
    *
-   * @returns The available files.
+   * Each entry's `name` is the identifier `downloadFile()` needs to retrieve
+   * that file's content.
+   *
+   * @returns The available files, unwrapped from the API's `{Files: […]}`
+   *   envelope.
    * @throws {TwikeyError} If the request fails.
    */
   async getFiles(): Promise<ReconciliationFile[]> {
@@ -81,10 +102,11 @@ export class ReportingService extends BaseService {
   }
 
   /**
-   * Download a previously generated reconciliation file.
+   * Download a previously generated reconciliation file via a GET request to
+   * the API.
    *
    * @param filename - The file's `name`, as returned by `getFiles()`.
-   * @returns The file content.
+   * @returns The raw file content.
    * @throws {TwikeyError} If the request fails.
    */
   async downloadFile(filename: string): Promise<Buffer> {
