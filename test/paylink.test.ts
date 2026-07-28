@@ -135,12 +135,20 @@ describe('Paylink extended', {skip: noApiConfigured}, async () => {
     // via the API. Point PAID_PAYLINK_ID at a real paid link in the beta environment.
     test('refund a paid paylink', {skip: !process.env.PAID_PAYLINK_ID}, async () => {
         const id = Number(process.env.PAID_PAYLINK_ID);
-        // Refunds aren't idempotent: the same link+amount is rejected as a duplicate. Vary
-        // the amount so each run creates a genuinely new refund instead of being bounced.
-        const amount = Number((Math.random() * 0.9 + 0.1).toFixed(2));
 
         const before = await client.paylink.detail(id, true);
         assert.strictEqual(before.state, 'paid', 'PAID_PAYLINK_ID must point at a paid link');
+
+        // Refunds aren't idempotent: the same link+amount is rejected as a duplicate with
+        // `err_fail_integration` / "A duplicate refund has been detected". A random amount is
+        // not enough to avoid that — there are only 99 two-decimal values below 1.00 and this
+        // link gains one refund per run, so collisions become likely and the suite goes red for
+        // no real reason. Pick the smallest amount this link has not been refunded before, which
+        // is both collision-free and the least consumption of its remaining balance.
+        const used = new Set((before.refunds ?? []).map(r => r.amount));
+        const amount = Array.from({length: 999}, (_, i) => Number(((i + 1) / 100).toFixed(2)))
+            .find(candidate => !used.has(candidate));
+        assert.ok(amount, 'no unused refund amount left on this link');
 
         const ack = await client.paylink.refund({id, amount, message: 'Refund test ' + faker.git.commitSha({length: 8})});
         // The API echoes the request rather than describing the transfer: `id` here is the
