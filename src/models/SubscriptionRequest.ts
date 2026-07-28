@@ -14,7 +14,8 @@
  *     1m server-side if omitted).
  *   start - Start date of the subscription. Must be a future date.
  *   stop - Stop condition for the subscription.
- *   recurrenceCount - Number of times the subscription should run.
+ *   stopAfter - Number of runs after which the subscription stops. Omit it, or
+ *     send 0, for a subscription that runs indefinitely.
  *   transactionMessage - Message used on the individual transactions created
  *     by the subscription.
  */
@@ -27,7 +28,7 @@ export interface SubscriptionRequest {
     recurrence?: string;
     start?: string;
     stop?: string;
-    recurrenceCount?: number;
+    stopAfter?: number;
     transactionMessage?: string;
 }
 
@@ -44,7 +45,8 @@ export interface SubscriptionRequest {
  *   start - Start date of the subscription. Must be a future date.
  *   stop - Stop condition for the subscription.
  *   recurrence - Recurrence rule: one of 1w/1m/2m/3m/4m/6m/12m.
- *   recurrenceCount - Number of times the subscription should run.
+ *   stopAfter - Number of runs after which the subscription stops. Omit it, or
+ *     send 0, for a subscription that runs indefinitely.
  *   transactionMessage - Message used on the individual transactions created
  *     by the subscription.
  */
@@ -54,7 +56,7 @@ export interface SubscriptionUpdateRequest {
     start?: string;
     stop?: string;
     recurrence?: string;
-    recurrenceCount?: number;
+    stopAfter?: number;
     transactionMessage?: string;
 }
 

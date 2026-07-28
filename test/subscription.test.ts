@@ -63,6 +63,42 @@ describe('Subscription', {skip: noApiConfigured}, async () => {
         await client.subscription.cancel(mandateNumber, canonicalRef);
     });
 
+    // Regression test for a silent, billing-affecting bug: the run limit used to be sent as
+    // `recurrenceCount`, a name the API does not recognise. It was discarded without an error,
+    // so a subscription meant to stop after N runs billed indefinitely. Asserting the value
+    // comes back is the only way to catch that — the request alone always "succeeds".
+    test('stopAfter caps the number of runs and is echoed back', async () => {
+        const mndtId = await importedMandate(client, 'CAP-');
+        const created = await client.subscription.create({
+            ct: CT(),
+            mndtId,
+            ref: 'CAPREF' + faker.git.commitSha({length: 6}),
+            amount: 42,
+            message: 'Capped subscription',
+            recurrence: '1m',
+            start: '2026-09-01',
+            stopAfter: 3,
+        });
+        assert.strictEqual(created.stopAfter, 3, 'the run limit was not applied');
+
+        const detail = await client.subscription.detail(created.mndtId, created.ref ?? '');
+        assert.strictEqual(detail.stopAfter, 3, 'the run limit did not persist');
+    });
+
+    test('a subscription with no stopAfter runs indefinitely', async () => {
+        const mndtId = await importedMandate(client, 'NOCAP-');
+        const created = await client.subscription.create({
+            ct: CT(),
+            mndtId,
+            ref: 'NOCAPREF' + faker.git.commitSha({length: 6}),
+            amount: 42,
+            message: 'Open-ended subscription',
+            recurrence: '1m',
+            start: '2026-09-01',
+        });
+        assert.strictEqual(created.stopAfter, 0, '0 means no limit');
+    });
+
     test('query returns subscriptions with the fields the response type declares', async () => {
         const subscriptions = await client.subscription.query({});
         assert.ok(Array.isArray(subscriptions), 'expected an array of subscriptions');
