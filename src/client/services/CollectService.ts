@@ -24,6 +24,8 @@ export class CollectService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#status-collection
+   *
    * Fetch the details of a collection batch.
    *
    * @param params - Identifies the batch by either `id` or `pmtinfid`; exactly one is
@@ -37,6 +39,8 @@ export class CollectService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#query-collections
+   *
    * Query/list collection batches.
    *
    * @param params - Query parameters; every field is an optional filter.

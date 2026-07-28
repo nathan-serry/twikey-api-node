@@ -13,6 +13,9 @@ export interface CollectBatchResponse {
 }
 
 /**
+ * See https://www.twikey.com/api/#status-collection and
+ * https://www.twikey.com/api/#query-collections
+ *
  * A collection batch, as returned by `CollectService.detail()` and
  * `CollectService.query()`.
  *

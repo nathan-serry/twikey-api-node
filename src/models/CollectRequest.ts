@@ -18,6 +18,8 @@ export interface CollectRequest {
 }
 
 /**
+ * See https://www.twikey.com/api/#query-collections
+ *
  * Query parameters for `CollectService.query()`.
  *
  * Attributes:
@@ -40,6 +42,8 @@ export interface CollectQueryRequest {
 }
 
 /**
+ * See https://www.twikey.com/api/#status-collection
+ *
  * Parameters for `CollectService.detail()`. The endpoint requires either the batch
  * `id` or its `pmtinfid` — the union makes passing neither (or both) a compile error.
  *
