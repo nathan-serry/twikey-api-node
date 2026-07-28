@@ -16,29 +16,31 @@ export interface CollectBatchResponse {
  * A collection batch, as returned by `CollectService.detail()` and
  * `CollectService.query()`.
  *
+ * `detail()` (`GET /collect`) returns only the first four fields; `query()`
+ * (`GET /collect/query`) returns all of them, which is why the rest are optional.
+ *
  * Attributes:
  *   id - Batch identifier.
  *   pmtinfid - Payment information identifier of the batch.
  *   ct - Contract template the batch was collected for.
  *   tx - Number of transactions in the batch.
- *   amount - Total amount of the batch.
- *   status - Batch status.
- *   reqcolldt - Requested collection date.
- *   generated - When the batch was generated.
- *   progress - Progress of the batch, when reported.
- *   Entries - The individual collections in the batch, when included.
+ *   amount - Total amount of the batch. The API sends this as a string (e.g. "11.31"),
+ *     unlike the numeric `amount` on transactions and invoices. `query()` only.
+ *   status - Batch status, e.g. 'Sent'. `query()` only.
+ *   reqcolldt - Requested collection date. `query()` only.
+ *   generated - When the batch was generated. `query()` only.
+ *   progress - Progress of the batch, e.g. 'sent'. `query()` only.
  */
 export interface CollectResponse {
     id: number;
     pmtinfid: string;
     ct: number;
     tx: number;
-    amount: number;
-    status: string;
-    reqcolldt: string;
-    generated: string;
+    amount?: string;
+    status?: string;
+    reqcolldt?: string;
+    generated?: string;
     progress?: string;
-    Entries?: unknown[];
 }
 
 /**

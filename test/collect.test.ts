@@ -1,6 +1,5 @@
 import {describe, test} from "node:test";
 import * as assert from 'assert';
-import {TwikeyError} from "../src";
 import {CT, getClient, importedMandate, noApiConfigured} from "./support/helpers";
 
 describe('Collect', {skip: noApiConfigured}, async () => {
@@ -36,7 +35,7 @@ describe('Collect', {skip: noApiConfigured}, async () => {
     test('collect rejects an unknown ct', async () => {
         await assert.rejects(
             () => client.collect.collect({ct: 99999999}),
-            TwikeyError,
+            {statusCode: 400, code: 'err_no_such_ct'},
         );
     });
 
@@ -54,7 +53,7 @@ describe('Collect', {skip: noApiConfigured}, async () => {
     test('batchImport rejects a malformed pain008', async () => {
         await assert.rejects(
             () => client.collect.batchImport(CT(), '<not-a-pain008/>'),
-            TwikeyError,
+            {statusCode: 400, code: 'invalid_file'},
         );
     });
 });

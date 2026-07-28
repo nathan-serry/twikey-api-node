@@ -1,14 +1,13 @@
 import {describe, test} from "node:test";
 import * as assert from 'assert';
-import * as process from "node:process";
 import {faker} from '@faker-js/faker';
-import {getClient, importedMandate, noApiConfigured} from "./support/helpers";
+import {CT, getClient, importedMandate, noApiConfigured} from "./support/helpers";
 
 describe('Subscription', {skip: noApiConfigured}, async () => {
 
     const client = getClient();
 
-    test('full lifecycle: create -> detail -> update -> partialUpdate -> cancel', {skip: !process.env.SUBSCRIPTION_CT}, async () => {
+    test('full lifecycle: create -> detail -> update -> partialUpdate -> cancel', async () => {
         // Needs a fresh recurring mandate; the shared MNDTNUMBER is a contract-type
         // mandate the API rejects for subscriptions.
         const mndtId = await importedMandate(client, 'SUB-');
@@ -16,7 +15,7 @@ describe('Subscription', {skip: noApiConfigured}, async () => {
         // The API strips dashes from the ref, so keep it dash-free or lookups miss.
         const ref = 'SUBREF' + faker.git.commitSha({length: 6});
         const subscription = await client.subscription.create({
-            ct: Number(process.env.SUBSCRIPTION_CT!),
+            ct: CT(),
             mndtId,
             ref,
             amount: 99,
