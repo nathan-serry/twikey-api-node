@@ -59,7 +59,7 @@ export class InvoiceService extends BaseService {
     if (options?.lastpayment) includes.append("include", "lastpayment");
     if (options?.meta) includes.append("include", "meta");
     if (options?.customer) includes.append("include", "customer");
-    return this.get(`/invoice/${invoiceId}`, includes).then(value => value.data);
+    return this.get(`/invoice/${encodeURIComponent(invoiceId)}`, includes).then(value => value.data);
   }
 
   /**
@@ -164,7 +164,7 @@ export class InvoiceService extends BaseService {
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async update(invoiceId: string, update: InvoiceUpdateRequest): Promise<InvoiceResponse> {
-    return this.put(`/invoice/${invoiceId}`, { id: invoiceId, ...update }, { "Content-Type": "application/json" })
+    return this.put(`/invoice/${encodeURIComponent(invoiceId)}`, { id: invoiceId, ...update }, { "Content-Type": "application/json" })
       .then(value => value.data);
   }
 
@@ -176,7 +176,7 @@ export class InvoiceService extends BaseService {
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async reoffer(invoiceId: string): Promise<void> {
-    await this.patch(`/invoice/${invoiceId}/reoffer`);
+    await this.patch(`/invoice/${encodeURIComponent(invoiceId)}/reoffer`);
   }
 
   /**
@@ -187,7 +187,7 @@ export class InvoiceService extends BaseService {
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async qr(invoiceId: string): Promise<InvoiceQrResponse> {
-    return this.get(`/invoice/${invoiceId}/qr`, undefined, { "Content-Type": "application/json" }).then(value => value.data);
+    return this.get(`/invoice/${encodeURIComponent(invoiceId)}/qr`, undefined, { "Content-Type": "application/json" }).then(value => value.data);
   }
 
   /**
@@ -226,7 +226,7 @@ export class InvoiceService extends BaseService {
    *   error code.
    */
   async delete(invoiceId: string): Promise<void> {
-    await this.httpDelete(`/invoice/${invoiceId}`);
+    await this.httpDelete(`/invoice/${encodeURIComponent(invoiceId)}`);
   }
 
   /**

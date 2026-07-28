@@ -135,6 +135,60 @@ describe('Invoice extended', {skip: noApiConfigured}, async () => {
         assert.strictEqual(created.id, invoiceId, 'X-INVOICE-ID was not applied to the created invoice');
     });
 
+    test('action sends an invoice', async () => {
+        const invoice = await makeInvoice();
+        // action() answers 204 with no body, so "did not throw" is the whole assertion.
+        await client.invoice.action(invoice.id, {type: 'send'});
+    });
+
+    test('action rejects a paymentplan with no initialAmount', async () => {
+        const invoice = await makeInvoice();
+        await assert.rejects(
+            () => client.invoice.action(invoice.id, {type: 'paymentplan'}),
+            {statusCode: 400, code: 'err_missing_params', extra: 'initialAmount'},
+            'a paymentplan with no amounts should name the missing parameter',
+        );
+    });
+
+    const makeNumbered = (number: string) => {
+        const today = new Date().toISOString().split('T')[0];
+        return client.invoice.create({
+            number,
+            amount: 200,
+            date: today,
+            duedate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+            customer: randomCustomer(),
+        });
+    };
+
+    // The path segment accepts an invoice *number* as well as a UUID. Nothing covered that
+    // before, and it is the reason the segment has to be encoded at all.
+    test('detail resolves an invoice by its number', async () => {
+        const number = 'INVNUM' + Date.now();
+        const invoice = await makeNumbered(number);
+        assert.strictEqual(invoice.number, number, 'the API did not keep the invoice number');
+
+        const byNumber = await client.invoice.detail(number);
+        assert.ok(byNumber, 'lookup by invoice number returned nothing');
+        assert.strictEqual(byNumber.id, invoice.id, 'lookup by number returned a different invoice');
+    });
+
+    // Guards the encoding of the path segment. A number containing '#' or '?' changes what
+    // the URL means: unencoded, `INV#2026-1` is parsed as /invoice/INV with `#2026-1` dropped
+    // as a fragment, so the call would return whatever *that* resolves to — a different
+    // invoice, silently. Beta does not resolve an escaped number (it answers 200 with an
+    // empty body, so this is null today), but returning the wrong invoice must never happen.
+    test('detail never resolves to a different invoice when the number needs escaping', async () => {
+        const number = 'INV#2026-' + Date.now();
+        const invoice = await makeNumbered(number);
+        assert.strictEqual(invoice.number, number, 'the API did not keep the invoice number');
+
+        const looked = await client.invoice.detail(number);
+        if (looked) {
+            assert.strictEqual(looked.number, number, 'resolved to a different invoice than asked for');
+        }
+    });
+
     test('bulkCreate then bulkStatus round-trip', async () => {
         const today = new Date().toISOString().split('T')[0];
         const due = new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0];
