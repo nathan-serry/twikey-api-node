@@ -19,8 +19,11 @@ export class ReportingService extends BaseService {
    * Import a raw bank-statement (CODA/MT940/camt) payload via a POST request
    * to the API.
    *
-   * The payload is plain text: a header line of `twikey:<iban>` followed by
-   * data rows.
+   * The payload is plain text. Its first line is `twikey:<iban>` followed, on
+   * that same line, by the column header — e.g.
+   * `twikey:BE123… name;msg;amount;date;iban;bic` — and then one data row per
+   * entry, with the amount in cents. A column header on a line of its own is
+   * rejected as `invalid_file`.
    *
    * @param payload - The raw statement content to import.
    * @returns Nothing.
@@ -33,9 +36,10 @@ export class ReportingService extends BaseService {
   /**
    * Import structured bank-statement entries via a POST request to the API.
    *
-   * Builds the same `twikey:<iban>` header format `addAccount()` expects,
-   * with one data row per entry (`name;msg;amount;date;iban;bic`, amount in
-   * cents).
+   * Builds the same plain-text payload `addAccount()` expects: `twikey:<iban>`
+   * with the column header on that same first line, then one data row per
+   * entry (`name;msg;amount;date;iban;bic`). Amounts are given in units and
+   * sent in cents.
    *
    * @param iban - The account IBAN the entries belong to.
    * @param items - The statement entries to import.
@@ -44,11 +48,10 @@ export class ReportingService extends BaseService {
    */
   async addItems(iban: string, items: ReportingEntry[]): Promise<void> {
     const lines = [
-      `twikey:${iban}`,
-      "name;msg;amount;date;iban;bic",
+      `twikey:${iban} name;msg;amount;date;iban;bic`,
       ...items.map(r => `${r.name};${r.msg};${Math.floor(100 * r.amount)};${r.date};${r.iban};${r.bic}`)
     ];
-    await this.post("/reporting", lines.join("\n"), { "Content-Type": "application/x-www-form-urlencoded" });
+    await this.post("/reporting", lines.join("\n"), { "Content-Type": "text/plain" });
   }
 
   /**
