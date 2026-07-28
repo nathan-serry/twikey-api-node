@@ -24,20 +24,21 @@ export class InvoiceService extends BaseService {
    *
    * Create a new invoice via a POST request to the API.
    *
-   * @param request - The invoice fields, plus the optional `origin` and
-   *   `purpose` switches. Each is only sent when you set it; leaving one out
-   *   means the header is absent rather than sent as `false`.
+   * @param request - The invoice fields, plus the optional `origin`, `purpose`
+   *   and `forceTransaction` switches. Each is only sent when you set it; leaving
+   *   one out means the header is absent rather than sent as `false`.
    * @returns The created invoice.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async create(request: InvoiceCreateRequest): Promise<InvoiceResponse> {
-    // origin/purpose are headers, so keep them out of the JSON body.
-    const { origin, purpose, ...invoice } = request;
+    // origin/purpose/forceTransaction are headers, so keep them out of the JSON body.
+    const { origin, purpose, forceTransaction, ...invoice } = request;
 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (origin) headers["X-PARTNER"] = origin;
     if (purpose) headers["X-Purpose"] = purpose;
     if (invoice.manual) headers["X-MANUAL"] = "true";
+    if (forceTransaction) headers["X-FORCE-TRANSACTION"] = "true";
 
     return this.post("/invoice", invoice, headers).then(value => value.data);
   }
@@ -242,6 +243,14 @@ export class InvoiceService extends BaseService {
     const headers: Record<string, string> = { "Content-Type": "application/xml" };
     if (options?.manual) headers["X-MANUAL"] = "true";
     if (options?.invoiceId) headers["X-INVOICE-ID"] = options.invoiceId;
+    if (options?.template) headers["X-TEMPLATE"] = options.template;
+    if (options?.contract) headers["X-CONTRACT"] = options.contract;
+    if (options?.campaign) headers["X-CAMPAIGN"] = options.campaign;
+    if (options?.origin) headers["X-PARTNER"] = options.origin;
+    // One header per attribute; the key is appended to the prefix as-is.
+    for (const [key, value] of Object.entries(options?.attributes ?? {})) {
+      if (value !== undefined && value !== null) headers[`X-ATTR-${key}`] = String(value);
+    }
     return this.post("/invoice/ubl", xmlBody, headers).then(value => value.data);
   }
 

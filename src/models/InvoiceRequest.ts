@@ -66,10 +66,14 @@ export interface InvoiceRequest {
  *     Api" — only visible in the Twikey interface.
  *   purpose - Sent as `X-Purpose`. Alters the returned url: 'qr' (the default)
  *     returns a url usable in bank apps, 'redirect' a faster branded url.
+ *   forceTransaction - Sent as `X-FORCE-TRANSACTION: true`. Collect the invoice
+ *     immediately on the linked mandate instead of waiting for the normal
+ *     collection moment. Only meaningful for an invoice tied to a mandate.
  */
 export interface InvoiceCreateRequest extends InvoiceRequest {
   origin?: string;
   purpose?: 'qr' | 'redirect';
+  forceTransaction?: boolean;
 }
 
 /**
@@ -98,19 +102,35 @@ export interface InvoiceDetailOptions {
  *
  * UblUploadOptions holds the optional headers for `InvoiceService.ubl()`.
  *
- * These are converted to request headers rather than sent in the body. The
- * API documents further headers (`X-TEMPLATE`, `X-CONTRACT`, `X-PARTNER`,
- * `X-CAMPAIGN`, `X-ATTR-*`) that this SDK does not expose yet.
+ * These are converted to request headers rather than sent in the body. Every one
+ * is optional: a field you leave out means its header is not sent at all, so the
+ * API applies its own default.
  *
  * Attributes:
  *   manual - Sent as `X-MANUAL: true`. The invoice is not auto-collected via a
  *     recurring mechanism on import.
  *   invoiceId - Sent as `X-INVOICE-ID`. Use your own UUID for the invoice
  *     instead of a Twikey-generated one.
+ *   template - Sent as `X-TEMPLATE`. Id of the contract template to use for the
+ *     invoice instead of the creditor's default.
+ *   contract - Sent as `X-CONTRACT`. Mandate reference to link the invoice to,
+ *     so it is collected on that mandate.
+ *   campaign - Sent as `X-CAMPAIGN`. Name of the campaign the invitation
+ *     belongs to.
+ *   origin - Sent as `X-PARTNER`. Alters 'Api' in "Invoice was registered via
+ *     Api" — only visible in the Twikey interface.
+ *   attributes - Sent as one header per entry, `X-ATTR-<key>: <value>`, for
+ *     filling custom attributes on the invoice template. `{Ref: 'abc'}` becomes
+ *     `X-ATTR-Ref: abc`.
  */
 export interface UblUploadOptions {
   manual?: boolean;
   invoiceId?: string;
+  template?: string;
+  contract?: string;
+  campaign?: string;
+  origin?: string;
+  attributes?: Record<string, string>;
 }
 
 /**

@@ -85,24 +85,30 @@ export class TwikeyClient {
     return (hash.readUInt32BE(offset) & 0x7fffffff) % 100000000;
   }
 
+  /**
+   * How many times a throttled login is retried. Deliberately ONE, and deliberately not the
+   * 3-attempt exponential backoff `FetchClient` uses for ordinary calls: the login is the
+   * most heavily throttled route, every attempt counts against the limit, and repeatedly
+   * hammering it risks the api key being blocked outright. One retry rides out a transient
+   * burst; more than one makes a throttle worse instead of recovering from it.
+   */
+  private static readonly loginRetries = 1;
+  /** Wait before retrying when a throttled login names no delay of its own. */
+  private static readonly loginRetryDelayMs = 2000;
+  /** Upper bound on the wait, however large a delay the server asks for. */
+  private static readonly loginRetryMaxDelayMs = 60_000;
+
   private async getSessionToken(): Promise<string> {
     const now = Date.now();
 
     if (!this.lastLogin || now - this.lastLogin > this.maxSessionAge || !this.sessionToken) {
-      const formData = new URLSearchParams();
-      formData.append("apiToken", this.apiKey);
-      if (this.privateKey) {
-        formData.append("otp", String(TwikeyClient.getTotp(this.vendorPrefix, this.privateKey)));
-      }
+      let response = await this.postLogin();
 
-      const response = await fetch(this.baseURL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': this.userAgent,
-        },
-        body: formData.toString(),
-      });
+      // Retry once on 429 only. Any other status is final and falls through to loginError.
+      for (let attempt = 0; response.status === 429 && attempt < TwikeyClient.loginRetries; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, TwikeyClient.loginRetryDelay(response)));
+        response = await this.postLogin();
+      }
 
       if (!response.ok) throw await this.loginError(response);
 
@@ -117,6 +123,44 @@ export class TwikeyClient {
       return data.Authorization;
     }
     return this.sessionToken;
+  }
+
+  /**
+   * Performs one login exchange. The body is rebuilt per attempt on purpose: a one-time
+   * password is only valid for its 30 second window, so a retry that reused the first
+   * attempt's body could send an otp that has since expired.
+   */
+  private postLogin(): Promise<Response> {
+    const formData = new URLSearchParams();
+    formData.append("apiToken", this.apiKey);
+    if (this.privateKey) {
+      formData.append("otp", String(TwikeyClient.getTotp(this.vendorPrefix, this.privateKey)));
+    }
+
+    return fetch(this.baseURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': this.userAgent,
+      },
+      body: formData.toString(),
+    });
+  }
+
+  /**
+   * How long to wait before the single retry. Honours the delay the server names, falling
+   * back to a fixed wait when it names none — a throttled login usually carries no
+   * `Retry-After` and an empty body. Capped so a large value cannot hang the caller.
+   */
+  private static loginRetryDelay(response: Response): number {
+    const named = Number(
+      response.headers.get('X-Rate-Limit-Retry-After-Seconds')
+      ?? response.headers.get('Retry-After'),
+    );
+    const delayMs = Number.isFinite(named) && named > 0
+      ? named * 1000
+      : TwikeyClient.loginRetryDelayMs;
+    return Math.min(delayMs, TwikeyClient.loginRetryMaxDelayMs);
   }
 
   /**
