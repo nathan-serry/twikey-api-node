@@ -95,8 +95,11 @@ export class TwikeyClient {
   private static readonly loginRetries = 1;
   /** Wait before retrying when a throttled login names no delay of its own. */
   private static readonly loginRetryDelayMs = 2000;
-  /** Upper bound on the wait, however large a delay the server asks for. */
-  private static readonly loginRetryMaxDelayMs = 60_000;
+  /**
+   * The longest this will ever block before retrying. When the server asks for longer than
+   * this, the login is NOT retried at all — see `loginRetryDelay`.
+   */
+  private static readonly loginRetryMaxWaitMs = 5000;
 
   private async getSessionToken(): Promise<string> {
     const now = Date.now();
@@ -106,7 +109,12 @@ export class TwikeyClient {
 
       // Retry once on 429 only. Any other status is final and falls through to loginError.
       for (let attempt = 0; response.status === 429 && attempt < TwikeyClient.loginRetries; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, TwikeyClient.loginRetryDelay(response)));
+        const waitMs = TwikeyClient.loginRetryDelay(response);
+        // The server named a delay longer than we are willing to block for. Retrying is then
+        // actively harmful: it would be certain to fail and would spend another attempt against
+        // the limit. Stop and let the error carry the server's own hint to the caller.
+        if (waitMs === null) break;
+        await new Promise(resolve => setTimeout(resolve, waitMs));
         response = await this.postLogin();
       }
 
@@ -148,19 +156,25 @@ export class TwikeyClient {
   }
 
   /**
-   * How long to wait before the single retry. Honours the delay the server names, falling
-   * back to a fixed wait when it names none — a throttled login usually carries no
-   * `Retry-After` and an empty body. Capped so a large value cannot hang the caller.
+   * How long to wait before the single retry, or `null` to not retry at all.
+   *
+   * A throttled login does name its own delay: the api answers
+   * `X-Rate-Limit-Retry-After-Seconds` with values in the hundreds of seconds (1009 observed).
+   * Blocking that long inside an SDK call is worse for the caller than reporting the throttle,
+   * and retrying sooner than asked is both futile and another attempt against the limit. So a
+   * long delay means "do not retry"; only a short one, or none at all, is worth waiting out.
    */
-  private static loginRetryDelay(response: Response): number {
+  private static loginRetryDelay(response: Response): number | null {
     const named = Number(
       response.headers.get('X-Rate-Limit-Retry-After-Seconds')
       ?? response.headers.get('Retry-After'),
     );
-    const delayMs = Number.isFinite(named) && named > 0
-      ? named * 1000
-      : TwikeyClient.loginRetryDelayMs;
-    return Math.min(delayMs, TwikeyClient.loginRetryMaxDelayMs);
+    if (Number.isFinite(named) && named > 0) {
+      const namedMs = named * 1000;
+      return namedMs <= TwikeyClient.loginRetryMaxWaitMs ? namedMs : null;
+    }
+    // No hint given: a short wait covers the brief burst limit without inviting a blacklist.
+    return TwikeyClient.loginRetryDelayMs;
   }
 
   /**
