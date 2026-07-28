@@ -11,6 +11,7 @@ import {
   DocumentFeedMessage,
   DocumentQueryResponse,
   DocumentResponse,
+  MandateDetail,
 } from "../../models/DocumentResponse";
 import {FeedOptions, PdfResponse} from "../../models/Shared";
 
@@ -68,13 +69,17 @@ export class DocumentService extends BaseService {
    * @param mndtId - The unique identifier of the mandate to fetch (mndtId).
    * @param force - When true, forces a refresh of the mandate details rather than
    *   returning a cached value. (optional)
-   * @returns A structured response object representing the server's reply.
-   * @throws {TwikeyError} If the API call fails or the identifier is invalid.
+   * @returns The full mandate, unwrapped from the API's `{Mndt: {…}}` envelope. Note the
+   *   mandate's state is not part of it: the API sends that in the `X-STATE` response
+   *   header, which this method does not surface.
+   * @throws {TwikeyError} If the API call fails or the identifier is invalid. A mandate
+   *   that is not in a fetchable state answers `err_invalid_state`.
    */
-  async detail(mndtId: string, force?: boolean): Promise<DocumentResponse> {
+  async detail(mndtId: string, force?: boolean): Promise<MandateDetail> {
     const params: Record<string, any> = { mndtId };
     if (force) params.force = true;
-    return this.get(`/mandate/detail`, params).then(value => value.data);
+    // The API wraps the mandate as {Mndt: {…}}; unwrap defensively, as the other services do.
+    return this.get(`/mandate/detail`, params).then(value => value.data?.Mndt ?? value.data);
   }
 
   /**

@@ -37,6 +37,19 @@ describe('Document', {skip: noApiConfigured}, async () => {
         const importedMandateNumber = await importedMandate(client);
         const details = await client.document.detail(importedMandateNumber);
         assert.ok(details);
+        // detail() returns the mandate unwrapped from its {Mndt:{…}} envelope, so assert on
+        // nested fields: it used to be typed as {mndtId, url} and callers had to cast.
+        assert.strictEqual(details.MndtId, importedMandateNumber, 'wrong mandate returned');
+        assert.strictEqual(details.LclInstrm, 'CORE', 'imported test mandates are CORE');
+        assert.strictEqual(details.DbtrAcct, TEST_IBAN, 'debtor iban not reported');
+        assert.strictEqual(details.DbtrAgt?.FinInstnId?.BICFI, TEST_BIC, 'debtor bic not reported');
+        assert.strictEqual(details.Ocrncs?.SeqTp, 'RCUR', 'an imported mandate is recurring');
+        assert.ok(details.Dbtr?.Nm, 'debtor name missing');
+        assert.ok(details.Dbtr?.PstlAdr?.TwnNm, 'debtor city missing');
+        assert.ok(details.CdtrSchmeId, 'creditor scheme id missing');
+        // SplmtryData carries the Twikey-specific fields, including the ct as TemplateId.
+        const templateId = details.SplmtryData?.find(d => d.Key === 'TemplateId')?.Value;
+        assert.strictEqual(Number(templateId), CT(), 'TemplateId should be the contract template');
 
         const options: FeedOptions = {};
         let hasDocuments = false;
@@ -49,6 +62,10 @@ describe('Document', {skip: noApiConfigured}, async () => {
             if (doc.IsNew) {
                 assert.ok(doc);
                 assert.ok(doc.Mndt);
+                // The feed carries the mandate as an object in the same shape detail() returns
+                // — it was typed as `string`, so this pins it.
+                assert.strictEqual(typeof doc.Mndt, 'object', 'feed Mndt should be an object');
+                assert.ok(doc.Mndt.MndtId, 'feed mandate has no MndtId');
             }
             if (doc.IsUpdated) {
                 assert.ok(doc);
