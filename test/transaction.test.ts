@@ -1,8 +1,7 @@
 import {describe, test} from "node:test";
 import * as assert from 'assert';
 import {faker} from '@faker-js/faker';
-import {TwikeyError} from "../src";
-import {getClient, importedMandate, noApiConfigured} from "./support/helpers";
+import {getClient, importedMandate, noApiConfigured, pollBulkStatus} from "./support/helpers";
 
 describe('Transaction', {skip: noApiConfigured}, async () => {
 
@@ -60,18 +59,11 @@ describe('Transaction extended', {skip: noApiConfigured}, async () => {
         assert.ok(bulk, 'no bulk response');
         assert.ok(bulk.batchId, 'bulk response missing batchId');
 
-        // The batch may still be processing right after creation (bulkStatus 409s);
-        // poll a few times before giving up.
-        let entries;
-        for (let attempt = 0; ; attempt++) {
-            try {
-                entries = await client.transaction.bulkStatus(bulk.batchId);
-                break;
-            } catch (e) {
-                if (attempt >= 4 || (e as TwikeyError).statusCode !== 409) throw e;
-                await new Promise(r => setTimeout(r, 500));
-            }
-        }
+        // bulkStatus() returns null while the batch is still processing (API 409).
+        const entries = await pollBulkStatus(
+            () => client.transaction.bulkStatus(bulk.batchId),
+            'transaction',
+        );
         assert.ok(Array.isArray(entries), 'expected entries array');
         assert.ok(entries.length > 0, 'empty entries');
         assert.ok(entries[0].status, 'entry missing status');

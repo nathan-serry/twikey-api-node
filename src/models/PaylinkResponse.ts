@@ -1,3 +1,22 @@
+/**
+ * The reply from creating (`create()`) or fetching (`detail()`) a payment link.
+ *
+ * Mirrors Python's `CreatedPaylinkResponse` and `Paylink`
+ * (`twikey/model/paylink_response.py`) — Node uses one shared shape where
+ * Python has two separate classes. Python's `Paylink` additionally carries
+ * `ct`, and nested `customer`/`meta`/`time` objects (populated when fetched
+ * with `include=meta`) that this type doesn't expose.
+ *
+ * Attributes:
+ *   id - Payment link ID.
+ *   url - URL of the payment link. Only present on the `create()` response.
+ *   msg - Message shown to the customer.
+ *   amount - Amount to be paid.
+ *   ref - Reference of the payment link.
+ *   state - State of the payment link. Only present when fetched via `detail()`.
+ *   refunds - Refunds recorded against the link. Present only when fetched
+ *     with `detail(id, true)` (`include=refunds`).
+ */
 export interface PaylinkResponse {
     id: number;
     url: string;
@@ -5,7 +24,6 @@ export interface PaylinkResponse {
     amount: number;
     ref: string;
     state?: string;
-    /** Present only when the link is fetched with `detail(id, true)` (`include=refunds`). */
     refunds?: PaylinkRefundEntry[];
 }
 

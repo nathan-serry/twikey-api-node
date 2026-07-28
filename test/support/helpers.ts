@@ -89,6 +89,22 @@ export const importedMandate = async (client: TwikeyClient, suffix = ''): Promis
     return signed.mndtId ?? mandateNumber;
 };
 
+// A bulk batch is processed asynchronously: bulkStatus() answers null (API 409) until it
+// finishes. Poll until entries appear rather than asserting on the first call.
+export const pollBulkStatus = async <T>(
+    fetchStatus: () => Promise<T[] | null>,
+    label: string,
+    attempts = 10,
+    delayMs = 500,
+): Promise<T[]> => {
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        const entries = await fetchStatus();
+        if (entries) return entries;
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+    assert.fail(`${label} batch still processing after ${attempts} attempts`);
+};
+
 export const randomCustomer = () => ({
     l: 'nl',
     email: faker.internet.email(),

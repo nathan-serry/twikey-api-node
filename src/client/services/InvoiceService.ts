@@ -1,4 +1,5 @@
 import {BaseService} from "./BaseService";
+import {TwikeyError} from "../HttpClient";
 import {
   InvoiceActionRequest,
   InvoiceCreateRequest,
@@ -265,11 +266,20 @@ export class InvoiceService extends BaseService {
    * Retrieves the result of a bulk invoice upload by batch ID.
    *
    * @param batchId - The batch ID.
-   * @returns The batch's invoice statuses.
+   * @returns The batch's invoice statuses, or null while the batch is still being
+   *   processed. Poll until it returns a list.
    * @throws {TwikeyError} If the request fails or returns an unexpected status.
    */
-  async bulkStatus(batchId: string): Promise<InvoiceBulkEntry[]> {
-    return this.get("/invoice/bulk", { batchId }, { "Content-Type": "application/json" }).then(value => value.data);
+  async bulkStatus(batchId: string): Promise<InvoiceBulkEntry[] | null> {
+    try {
+      return await this.get("/invoice/bulk", { batchId }, { "Content-Type": "application/json" })
+        .then(value => value.data);
+    } catch (e) {
+      // 409 means the batch has not finished processing yet — an expected state, not a
+      // failure. Python's `invoice.bulk_details` returns None here for the same reason.
+      if (e instanceof TwikeyError && e.statusCode === 409) return null;
+      throw e;
+    }
   }
 
   /**

@@ -1,25 +1,20 @@
 /**
  * See https://www.twikey.com/api/#execute-collection
  *
- * CollectRequest holds the fields for `CollectService.collect()`.
+ * CollectRequest holds the fields for `CollectService.collect()`, which executes a
+ * batch collection for a contract template.
  *
  * Attributes:
- *   ct - Contract template ID.
- *   mndtId - Mandate reference.
- *   message - Message on bank statement.
- *   amount - Amount to be collected.
- *   ref - Internal reference.
- *   date - Transaction date.
- *   place - Place of transaction.
+ *   ct - Contract template for which to do the collection.
+ *   colltndt - Collection date; defaults to the earliest batch.
+ *   prenotify - Whether to send a prenotification to the debtors.
+ *   until - Only include transactions due up to this date.
  */
 export interface CollectRequest {
     ct: number;
-    mndtId: string;
-    message: string;
-    amount: number;
-    ref?: string;
-    date?: string;
-    place?: string;
+    colltndt?: string;
+    prenotify?: boolean;
+    until?: string;
 }
 
 /**
@@ -45,8 +40,14 @@ export interface CollectQueryRequest {
 }
 
 /**
- * Parameters for `CollectService.detail()`.
+ * Parameters for `CollectService.detail()`. The endpoint requires either the batch
+ * `id` or its `pmtinfid` — the union makes passing neither (or both) a compile error.
+ *
+ * Attributes:
+ *   id - Batch identifier.
+ *   pmtinfid - Payment information identifier of the batch, as returned in
+ *     `CollectBatchResponse.rcurMsgId`.
  */
-export interface CollectDetailRequest {
-    [key: string]: string | number | boolean | undefined;
-}
+export type CollectDetailRequest =
+    | { id: string | number; pmtinfid?: never }
+    | { pmtinfid: string; id?: never };

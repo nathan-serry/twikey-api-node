@@ -2,7 +2,7 @@ import {FeedOptions} from "../src";
 import {describe, test} from "node:test";
 import * as assert from 'assert';
 import {randomUUID} from "node:crypto";
-import {getClient, noApiConfigured, randomCustomer, testPdfBase64, ublInvoice} from "./support/helpers";
+import {getClient, noApiConfigured, pollBulkStatus, randomCustomer, testPdfBase64, ublInvoice} from "./support/helpers";
 
 describe('Invoice', {skip: noApiConfigured}, async () => {
 
@@ -148,7 +148,11 @@ describe('Invoice extended', {skip: noApiConfigured}, async () => {
         assert.ok(bulk, 'no bulk response');
         assert.ok(bulk.batchId, 'bulk missing batchId');
 
-        const entries = await client.invoice.bulkStatus(bulk.batchId);
+        // bulkStatus() returns null while the batch is still processing (API 409).
+        const entries = await pollBulkStatus(
+            () => client.invoice.bulkStatus(bulk.batchId),
+            'invoice',
+        );
         assert.ok(Array.isArray(entries), 'expected entries array');
         assert.ok(entries.length > 0, 'empty entries');
         assert.ok(entries[0].status, 'entry missing status');
