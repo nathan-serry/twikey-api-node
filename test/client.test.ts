@@ -1,4 +1,4 @@
-import {TwikeyClient, TwikeyError} from "../src";
+import {TwikeyClient, TwikeyError, Webhook} from "../src";
 import {describe, test} from "node:test";
 import * as assert from 'assert';
 import {apiUrl, getClient, newClient, noApiConfigured} from "./support/helpers";
@@ -27,14 +27,59 @@ describe('Errors', {skip: noApiConfigured}, () => {
     });
 });
 
+// Needs no credentials: the signature is an HMAC over the api key, computed locally.
 describe('Webhook', async () => {
 
+    const API_KEY = "1234";
+    const PAYLOAD = "abc=123&name=abc";
+    // The hex HMAC-SHA256 of PAYLOAD under API_KEY, so 64 characters.
+    const VALID = "55261CBC12BF62000DE1371412EF78C874DBC46F513B078FB9FF8643B2FD4FC2";
+
+    const client = () => new TwikeyClient({apiKey: API_KEY, apiUrl: "http://doesntmatter"});
+
     test('verifyWebHookSignature validates a known signature', () => {
-        const client = new TwikeyClient({
-            apiKey: "1234",
-            apiUrl: "http://doesntmatter",
-        });
-        assert.ok(client.verifyWebHookSignature("55261CBC12BF62000DE1371412EF78C874DBC46F513B078FB9FF8643B2FD4FC2", "abc=123&name=abc"));
+        assert.ok(client().verifyWebHookSignature(VALID, PAYLOAD));
+    });
+
+    // Regression test. This used to throw RangeError out of timingSafeEqual, which refuses to
+    // compare buffers of different lengths — so a caller handing over a truncated signature got
+    // an exception instead of the boolean the signature promises, and a webhook endpoint would
+    // answer 500 rather than rejecting the request.
+    test('verifyWebHookSignature returns false for a too-short signature', () => {
+        assert.strictEqual(client().verifyWebHookSignature("55261CBC", PAYLOAD), false);
+    });
+
+    test('verifyWebHookSignature returns false for a wrong signature of the right length', () => {
+        const wrong = VALID.slice(0, -1) + (VALID.endsWith('3') ? '4' : '3');
+        assert.strictEqual(wrong.length, VALID.length, 'the fixture must keep the signature length');
+        assert.strictEqual(client().verifyWebHookSignature(wrong, PAYLOAD), false);
+    });
+
+    // The static helper is the portable form: it needs no client, so a webhook endpoint can
+    // check a call signed with any api key. Note its argument order is (payload, signature,
+    // apiKey), unlike the instance method's (signature, payload).
+    test('Webhook.verifySignature accepts the known signature without a client', () => {
+        assert.ok(Webhook.verifySignature(PAYLOAD, VALID, API_KEY));
+    });
+
+    test('Webhook.verifySignature rejects a wrong signature, an empty one and a wrong key', () => {
+        const wrong = VALID.slice(0, -1) + (VALID.endsWith('3') ? '4' : '3');
+        assert.strictEqual(Webhook.verifySignature(PAYLOAD, wrong, API_KEY), false, 'wrong signature');
+        assert.strictEqual(Webhook.verifySignature(PAYLOAD, "55261CBC", API_KEY), false, 'short signature');
+        assert.strictEqual(Webhook.verifySignature(PAYLOAD, "", API_KEY), false, 'empty signature');
+        assert.strictEqual(Webhook.verifySignature(PAYLOAD, VALID, "wrong-key"), false, 'wrong api key');
+        assert.strictEqual(Webhook.verifySignature("tampered=1", VALID, API_KEY), false, 'tampered payload');
+    });
+
+    // There must be exactly one implementation: the instance method just supplies its own key.
+    test('the instance method and the static helper agree', () => {
+        for (const signature of [VALID, VALID.toLowerCase(), "55261CBC", ""]) {
+            assert.strictEqual(
+                client().verifyWebHookSignature(signature, PAYLOAD),
+                Webhook.verifySignature(PAYLOAD, signature, API_KEY),
+                `disagreement on signature "${signature}"`,
+            );
+        }
     });
 });
 

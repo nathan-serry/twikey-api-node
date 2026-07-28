@@ -8,8 +8,9 @@ import {CustomerService} from "./services/CustomerService";
 import {RefundService} from "./services/RefundService";
 import {CollectService} from "./services/CollectService";
 import {ReportingService} from "./services/ReportingService";
-import {createHmac, timingSafeEqual} from "node:crypto";
+import {createHmac} from "node:crypto";
 import {FetchClient, TwikeyError} from "./HttpClient";
+import {Webhook} from "./Webhook";
 export {TwikeyError} from "./HttpClient";
 
 export class TwikeyClient {
@@ -139,12 +140,28 @@ export class TwikeyClient {
     return new TwikeyError(response.status, code, body.extra ?? '', message, 'Config');
   }
 
+  /**
+   * Verify the signature Twikey sent alongside a webhook payload, using this client's api key.
+   *
+   * Delegates to `Webhook.verifySignature`, which is where the comparison lives. Use that
+   * static helper directly when the webhook was signed with a different api key, or to avoid
+   * constructing a client at all.
+   *
+   * @param signature - The value of the request's `X-Signature` header.
+   * @param payload - The raw, url-decoded query string Twikey called the webhook with.
+   * @returns True when the signature matches the payload, false otherwise.
+   */
   verifyWebHookSignature(signature: string, payload: string): boolean {
-    const hmac = createHmac("sha256", this.apiKey)
-        .update(payload)
-        .digest("hex");
-
-    return timingSafeEqual(Buffer.from(signature.toLowerCase()), Buffer.from(hmac));
+    // Behaviour is unchanged for callers. The HMAC-SHA256 comparison that used to sit inline
+    // here was moved into Webhook.verifySignature — not dropped — so one implementation serves
+    // both this method and the static, client-free helper. It gained a length guard there: the
+    // old inline version threw RangeError out of timingSafeEqual on a wrong-length signature
+    // instead of returning false, making a webhook endpoint answer 500 rather than reject.
+    //
+    // This method keeps its name and its (signature, payload) order so existing callers are
+    // unaffected, while the helper takes (payload, signature, apiKey) — which is why the two
+    // arguments are swapped on the way through.
+    return Webhook.verifySignature(payload, signature, this.apiKey);
   }
 
   async ping() {
