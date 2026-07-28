@@ -7,18 +7,21 @@ import {TwikeyClient} from "../../src";
 
 export const noApiConfigured = !process.env.TWIKEY_API_KEY;
 
+export const apiUrl = (): string =>
+    process.env.TWIKEY_API_URL || "https://api.beta.twikey.com/creditor";
+
+// A client of its own, for tests that end the session (logout): the client returned by
+// getClient() is memoised and shared by every suite in the same file.
+export const newClient = (): TwikeyClient => new TwikeyClient({
+    apiKey: process.env.TWIKEY_API_KEY || '',
+    apiUrl: apiUrl(),
+    userAgent: "twikey-api-node-test"
+});
+
 let cachedClient: TwikeyClient;
 export const getClient = (): TwikeyClient => {
     if (!cachedClient) {
-        let url = "https://api.beta.twikey.com/creditor";
-        if (process.env.TWIKEY_API_URL) {
-            url = process.env.TWIKEY_API_URL;
-        }
-        cachedClient = new TwikeyClient({
-            apiKey: process.env.TWIKEY_API_KEY || '',
-            apiUrl: url,
-            userAgent: "twikey-api-node-test"
-        });
+        cachedClient = newClient();
     }
     return cachedClient;
 };

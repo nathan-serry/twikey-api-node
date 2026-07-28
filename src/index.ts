@@ -1,4 +1,5 @@
 export * from "./client/TwikeyClient";
+export * from "./models/Config";
 export * from "./models/Shared";
 export * from "./models/CustomerRequest";
 export * from "./models/CustomerResponse";

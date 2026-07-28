@@ -2,11 +2,25 @@ export class TwikeyError extends Error {
   // statusCode, not status: the response models use `status` for business state strings.
   readonly statusCode: number;
   readonly code: string;
+  /** The API's `extra` field: which parameter was at fault, or a fuller explanation. */
+  readonly extra: string;
+  /** The API's `message` field — the human-readable reason. Python calls this `error`. */
+  readonly apiMessage: string;
+  /** Where the error came from, e.g. "POST /invoice", "Config" for login, "Logout". */
+  readonly ctx: string;
 
-  constructor(statusCode: number, code: string, extra: string) {
-    super(`status=${statusCode} error=${code}` + (extra ? ` extra=${extra}` : ''));
+  constructor(statusCode: number, code: string, extra = '', apiMessage = '', ctx = '') {
+    super(
+      `status=${statusCode} error=${code}`
+      + (extra ? ` extra=${extra}` : '')
+      + (apiMessage ? ` msg=${apiMessage}` : '')
+      + (ctx ? ` ctx=${ctx}` : ''),
+    );
     this.statusCode = statusCode;
     this.code = code;
+    this.extra = extra;
+    this.apiMessage = apiMessage;
+    this.ctx = ctx;
   }
 }
 
@@ -15,6 +29,8 @@ type RequestOptions = {
   params?: Record<string, any> | URLSearchParams;
   headers?: Record<string, string>;
   responseType?: 'arraybuffer';
+  /** Overrides the `ctx` on a thrown TwikeyError; defaults to "<METHOD> <path>". */
+  ctx?: string;
 };
 
 export type HttpResponse = {
@@ -112,9 +128,15 @@ export class FetchClient {
     response.headers.forEach((value, key) => { responseHeaders[key] = value; });
 
     if (!response.ok) {
-      let errorData: { code?: string; extra?: string } = {};
-      try { errorData = await response.json() as { code?: string; extra?: string }; } catch { /* ignore */ }
-      throw new TwikeyError(response.status, errorData.code ?? '', errorData.extra ?? '');
+      let errorData: { code?: string; message?: string; extra?: string } = {};
+      try { errorData = await response.json() as { code?: string; message?: string; extra?: string }; } catch { /* ignore */ }
+      throw new TwikeyError(
+        response.status,
+        errorData.code ?? '',
+        errorData.extra ?? '',
+        errorData.message ?? '',
+        options.ctx ?? `${method} ${path || '/'}`,
+      );
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
