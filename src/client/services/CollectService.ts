@@ -59,9 +59,8 @@ export class CollectService extends BaseService {
    *
    * @param ct - Contract template to import the collections for; sent as a query
    *   parameter.
-   * @param pain008Xml - The pain008 document, as an XML string or buffer. Unlike
-   *   Python's `batch_import`, which takes a path and opens the file, this takes the
-   *   content itself.
+   * @param pain008Xml - The pain008 document content itself, as an XML string or
+   *   buffer (not a file path).
    * @returns The identifiers of the created batches.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */

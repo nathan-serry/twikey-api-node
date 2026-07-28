@@ -3,12 +3,11 @@ import {BaseInfo} from "./Shared";
 /**
  * Customer information embedded in `InvoiceRequest.customer`.
  *
- * Mirrors Python's `Customer` (`twikey/model/invoice_request.py`); the shared
- * contact fields (customer number, email, name, address, etc.) come from
- * `BaseInfo`.
+ * The shared contact fields (customer number, email, name, address, etc.)
+ * come from `BaseInfo`.
  *
  * Attributes:
- *   language - Language of the customer. Mirrors Python's `Customer.lang`.
+ *   language - Language of the customer.
  */
 export interface Customer extends BaseInfo {
     language?: string;

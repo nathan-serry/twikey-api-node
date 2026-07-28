@@ -29,8 +29,8 @@ export interface RefundBatchRequest {
     iban?: string;
 }
 
-// Identifies an existing refund batch for status lookup (mirrors Python's
-// RefundBatchStatusRequest). NOT the same as RefundBatchRequest (ct/iban), which creates a batch.
+// Identifies an existing refund batch for status lookup. NOT the same as
+// RefundBatchRequest (ct/iban), which creates a batch.
 export interface RefundBatchStatusRequest {
     id: string | number;
     pmtinfid?: string;

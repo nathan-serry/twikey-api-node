@@ -141,7 +141,7 @@ export class TransactionService extends BaseService {
         .then(value => value.data);
     } catch (e) {
       // 409 means the batch has not finished processing yet — an expected state, not a
-      // failure. Matches how Python's `invoice.bulk_details` handles the same status.
+      // failure.
       if (e instanceof TwikeyError && e.statusCode === 409) return null;
       throw e;
     }
@@ -169,8 +169,7 @@ export class TransactionService extends BaseService {
    * This method retrieves events from Twikey since the last sync. It's
    * typically used to synchronize your CRM or ERP system with the current
    * state on the Twikey platform. Can be triggered periodically or via
-   * webhook. Unlike Python's callback-based `TransactionFeed` handler, this
-   * returns an async generator you iterate with `for await`.
+   * webhook. This returns an async generator, so iterate it with `for await`.
    *
    * @param options - Feed options: `includes` to request extra fields, and
    *   `start_position` to resume from a previous `last_position`. (optional)

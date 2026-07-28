@@ -25,8 +25,6 @@ export interface Transaction {
 /**
  * The reply from fetching transaction status/details or querying transactions.
  *
- * Mirrors Python's `TransactionStatusResponse` (`twikey/model/transaction_response.py`).
- *
  * Attributes:
  *   Entries - The list of matching transactions.
  */

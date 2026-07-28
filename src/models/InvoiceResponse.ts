@@ -1,8 +1,6 @@
 /**
  * The reply from creating, updating, or fetching an invoice.
  *
- * Mirrors a subset of Python's `Invoice` (`twikey/model/invoice_response.py`).
- *
  * Attributes:
  *   id - UUID of the invoice.
  *   url - URL to view the invoice, if applicable.
@@ -18,8 +16,6 @@ export interface InvoiceResponse {
 
 /**
  * One entry from the payment feed.
- *
- * Mirrors Python's `Event` (`twikey/model/invoice_response.py`).
  *
  * Attributes:
  *   eventId - Unique identifier of the event.
@@ -45,7 +41,7 @@ export interface PaymentResponse {
 }
 
 /**
- * Mirrors Python's `Origin` (`twikey/model/invoice_response.py`).
+ * The invoice a payment feed event relates to.
  *
  * Attributes:
  *   object - The type of object this origin refers to.
@@ -61,7 +57,7 @@ export interface Origin {
 }
 
 /**
- * Mirrors Python's `Gateway` (`twikey/model/invoice_response.py`).
+ * The payment gateway a payment feed event was processed through.
  *
  * Attributes:
  *   id - Identifier of the gateway.
@@ -77,7 +73,7 @@ export interface Gateway {
 }
 
 /**
- * Mirrors Python's `EventError` (`twikey/model/invoice_response.py`).
+ * Details of a failed payment, present on a payment feed event that failed.
  *
  * Attributes:
  *   code - Error code.
@@ -113,8 +109,6 @@ export interface InvoiceQrResponse {
  *
  * The reply from `InvoiceService.bulkCreate()`.
  *
- * Mirrors Python's `BulkInvoiceResponse` (`twikey/model/invoice_response.py`).
- *
  * Attributes:
  *   batchId - The UUID identifier of the created batch.
  */
@@ -126,8 +120,6 @@ export interface InvoiceBulkResult {
  * See https://www.twikey.com/api/#bulk-batch-details
  *
  * One entry in the reply from `InvoiceService.bulkStatus()`.
- *
- * Mirrors Python's `BulkBatchDetailsItem` (`twikey/model/invoice_response.py`).
  *
  * Attributes:
  *   id - The invoice ID.

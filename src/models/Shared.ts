@@ -1,7 +1,6 @@
 /**
  * Base contact/identity fields shared across Document, Customer and Paylink
- * requests. Field-by-field this mirrors Python's `InviteRequest` attributes
- * (`twikey/model/document_request.py`) where they overlap.
+ * requests.
  *
  * Attributes:
  *   l - Language code (e.g., 'en', 'nl').

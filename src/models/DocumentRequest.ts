@@ -4,8 +4,8 @@ import {BaseInfo} from "./Shared";
  * DocumentRequest holds the full set of fields that can be used
  * to initiate a mandate invitation via the Twikey API.
  *
- * Mirrors Python's `InviteRequest` (`twikey/model/document_request.py`), plus a
- * handful of UK/BACS-only fields (`tc`, `accountnumber`, `sortcode`, `subregion`).
+ * Covers the standard iban/bic invite fields plus a handful of UK/BACS-only
+ * fields (`tc`, `accountnumber`, `sortcode`, `subregion`) used instead.
  *
  * Attributes:
  *   ct - Contract template ID.
@@ -74,8 +74,8 @@ export interface DocumentRequest extends BaseInfo {
  * through various signing methods supported by the Twikey API, on top of the
  * invite request parameters.
  *
- * Mirrors Python's `SignRequest` (`twikey/model/document_request.py`), which
- * extends `InviteRequest` the same way this extends `DocumentRequest`.
+ * Extends the invite request with the fields needed to actually sign the
+ * mandate, on top of the fields used to invite the customer in the first place.
  *
  * Attributes:
  *   method - Method to sign (e.g., "sms", "digisign", "import", "itsme",
@@ -103,8 +103,8 @@ export interface DocumentSignRequest extends DocumentRequest {
  * DocumentUpdateRequest holds the parameters for updating a mandate via the
  * Twikey API.
  *
- * Mirrors Python's `UpdateMandateRequest` (`twikey/model/document_request.py`).
- * The mandate to update is passed as the separate `mndtId` parameter to
+ * Holds only the fields that can change on an existing mandate. The mandate
+ * to update is passed as the separate `mndtId` parameter to
  * `DocumentService.update()` rather than as a field on this type.
  *
  * Attributes:
@@ -140,8 +140,8 @@ export interface DocumentUpdateRequest {
  * DocumentActionRequest holds the parameters to perform an action on a mandate
  * via the Twikey API.
  *
- * Mirrors Python's `MandateActionRequest` (`twikey/model/document_request.py`).
- * The mandate to act on is passed as the separate `mndtId` parameter to
+ * Holds only the action to perform and its optional parameter. The mandate
+ * to act on is passed as the separate `mndtId` parameter to
  * `DocumentService.action()` rather than as a field on this type.
  *
  * Attributes:
@@ -159,7 +159,8 @@ export interface DocumentActionRequest {
  * DocumentQueryRequest holds the parameters used to query mandates/contracts
  * via the Twikey API.
  *
- * Mirrors Python's `QueryMandateRequest` (`twikey/model/document_request.py`).
+ * At least one of `iban`, `customerNumber` or `email` must be given to
+ * identify which mandates to look up.
  *
  * Attributes:
  *   iban - The IBAN of the contract. At least one of `iban`, `customerNumber`

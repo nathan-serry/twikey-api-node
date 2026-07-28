@@ -6,8 +6,6 @@ import {Customer} from "./CustomerRequest";
  * InvoiceRequest holds the full set of fields used to create an invoice via
  * the Twikey API.
  *
- * Mirrors Python's `InvoiceRequest` (`twikey/model/invoice_request.py`).
- *
  * Attributes:
  *   id - UUID of the invoice.
  *   number - Invoice number (unique identifier).
@@ -60,8 +58,8 @@ export interface InvoiceRequest {
  *
  * `manual` is deliberately *not* redefined here: it is a real body field on
  * `InvoiceRequest` (and works per-invoice in bulk). `create()` additionally
- * mirrors it to the `X-MANUAL` header, the way Python's `invoice.create()`
- * does, so callers only ever set it in one place.
+ * mirrors it to the `X-MANUAL` header, so callers only ever set it in one
+ * place.
  *
  * Attributes:
  *   origin - Sent as `X-PARTNER`. Alters 'Api' in "Invoice was registered via
@@ -81,8 +79,7 @@ export interface InvoiceCreateRequest extends InvoiceRequest {
  * `InvoiceService.detail()` response. Each enabled flag adds one `include=`
  * query parameter.
  *
- * Mirrors the `include_*` flags of Python's `DetailsRequest`
- * (`twikey/model/invoice_request.py`).
+ * Each flag corresponds to one `include=` value accepted by the endpoint.
  *
  * Attributes:
  *   lastpayment - Include details about the method and state of executed
@@ -101,10 +98,9 @@ export interface InvoiceDetailOptions {
  *
  * UblUploadOptions holds the optional headers for `InvoiceService.ubl()`.
  *
- * Mirrors Python's `UblUploadRequest.to_headers()`
- * (`twikey/model/invoice_request.py`). The API documents further headers
- * (`X-TEMPLATE`, `X-CONTRACT`, `X-PARTNER`, `X-CAMPAIGN`, `X-ATTR-*`) that
- * neither SDK exposes yet.
+ * These are converted to request headers rather than sent in the body. The
+ * API documents further headers (`X-TEMPLATE`, `X-CONTRACT`, `X-PARTNER`,
+ * `X-CAMPAIGN`, `X-ATTR-*`) that this SDK does not expose yet.
  *
  * Attributes:
  *   manual - Sent as `X-MANUAL: true`. The invoice is not auto-collected via a
@@ -140,18 +136,16 @@ export interface InvoiceUpdateRequest {
  *
  * InvoiceActionRequest holds the parameters to perform an action on an invoice.
  *
- * Mirrors Python's `ActionRequest` (`twikey/model/invoice_request.py`); the
- * invoice to act on is passed as the separate `invoiceId` parameter to
+ * Holds only the action to perform and its optional parameters; the invoice
+ * to act on is passed as the separate `invoiceId` parameter to
  * `InvoiceService.action()` rather than as a field on this type.
  *
  * Which extra fields apply depends on `type`. Everything set is sent as form
  * fields; anything left out is omitted. Missing required parameters come back
  * as `err_missing_params` with the offending name in `extra`.
  *
- * The `type` union is the union of the API docs and Python's `ActionType` —
- * each list is missing entries the other has, and all were confirmed valid
- * against the API ('send'/'refund' are absent from Python, 'invoice'/
- * 'letterWithInvoice' are absent from the docs page).
+ * The `type` union covers every action confirmed valid against the API,
+ * including some not listed on the docs page ('invoice'/'letterWithInvoice').
  *
  * Attributes:
  *   type - The action to execute.

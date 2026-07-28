@@ -4,7 +4,7 @@ export class TwikeyError extends Error {
   readonly code: string;
   /** The API's `extra` field: which parameter was at fault, or a fuller explanation. */
   readonly extra: string;
-  /** The API's `message` field — the human-readable reason. Python calls this `error`. */
+  /** The API's `message` field — the human-readable reason. */
   readonly apiMessage: string;
   /** Where the error came from, e.g. "POST /invoice", "Config" for login, "Logout". */
   readonly ctx: string;

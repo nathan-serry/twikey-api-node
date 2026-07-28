@@ -101,7 +101,7 @@ describe('Logout', {skip: noApiConfigured}, () => {
         await client.logout();
 
         // Sending the Authorization header is the whole point: the server can only end the
-        // session it was told about, so Python's header-less logout is a local-only reset.
+        // session it was told about, so a logout that omits it resets local state only.
         // Beta rejects the dead token with 401 "Not logged in" when the retry is spaced out
         // and 429 when it follows immediately, so assert only that it is no longer accepted.
         const afterLogout = await fetch(`${apiUrl()}/invoice`, {headers: {Authorization: token}});

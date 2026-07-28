@@ -70,8 +70,7 @@ export class InvoiceService extends BaseService {
    * This method retrieves events from Twikey since the last sync. It's
    * typically used to synchronize your CRM or ERP system with the current
    * state on the Twikey platform. Can be triggered periodically or via
-   * webhook. Unlike Python's callback-based `InvoiceFeed` handler, this
-   * returns an async generator you iterate with `for await`.
+   * webhook. This returns an async generator, so iterate it with `for await`.
    *
    * @param options - Feed options: `includes` to request extra fields, and
    *   `start_position` to resume from a previous `last_position`. (optional)
@@ -114,9 +113,8 @@ export class InvoiceService extends BaseService {
    *
    * Fetches the latest payment updates.
    *
-   * This method retrieves events from Twikey since the last sync. Unlike
-   * Python's callback-based `PaymentFeed` handler, this returns an async
-   * generator you iterate with `for await`.
+   * This method retrieves events from Twikey since the last sync. This returns
+   * an async generator, so iterate it with `for await`.
    *
    * @param options - Feed options: `includes` to request extra fields, and
    *   `start_position` to resume from a previous `last_position`. (optional)
@@ -202,7 +200,7 @@ export class InvoiceService extends BaseService {
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async action(invoiceId: string, request: InvoiceActionRequest): Promise<void> {
-    // Form-encoded body, matching the API docs and Python's `invoice.action()`.
+    // Form-encoded body, matching the API docs for this endpoint.
     // FetchClient turns the object into URLSearchParams for this content type,
     // so every value is escaped and undefined fields are dropped.
     await this.post(`/invoice/${encodeURIComponent(invoiceId)}/action`, request, {
@@ -276,7 +274,7 @@ export class InvoiceService extends BaseService {
         .then(value => value.data);
     } catch (e) {
       // 409 means the batch has not finished processing yet — an expected state, not a
-      // failure. Python's `invoice.bulk_details` returns None here for the same reason.
+      // failure.
       if (e instanceof TwikeyError && e.statusCode === 409) return null;
       throw e;
     }

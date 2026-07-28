@@ -6,10 +6,6 @@ import {BaseInfo} from "./Shared";
  * PaylinkRequest holds the fields used to create a payment link for a
  * customer or name.
  *
- * Mirrors Python's `PaymentLinkRequest` (`twikey/model/paylink_request.py`);
- * `message` corresponds to Python's `title` (the message shown to the
- * customer on the bank statement).
- *
  * Attributes:
  *   ct - Contract template (for customer registration).
  *   sendInvite - How to send the invite (e.g. 'email', 'sms').
@@ -62,8 +58,6 @@ export interface PaylinkDetailOptions {
  *
  * PaylinkRefundRequest holds the fields to refund the full or partial amount
  * of a payment link.
- *
- * Mirrors Python's `PaymentLinkRefundRequest` (`twikey/model/paylink_request.py`).
  *
  * Attributes:
  *   id - Payment link ID.

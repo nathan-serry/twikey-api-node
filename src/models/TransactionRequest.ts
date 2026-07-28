@@ -3,8 +3,6 @@
  *
  * TransactionRequest holds the fields needed to create a new transaction.
  *
- * Mirrors Python's `NewTransactionRequest` (`twikey/model/transaction_request.py`).
- *
  * Attributes:
  *   mndtId - Mandate reference.
  *   date - Transaction date (ISO format YYYY-MM-DD).
@@ -45,10 +43,7 @@ export interface TransactionUpdateRequest {
  * See https://www.twikey.com/api/#action-on-transaction
  *
  * TransactionActionRequest holds the parameters to perform an action on a
- * transaction.
- *
- * Mirrors Python's `ActionRequest` (`twikey/model/transaction_request.py`), plus
- * an alternate `ref` identifier.
+ * transaction, identified by either `id` or an alternate `ref`.
  *
  * Attributes:
  *   id - The unique ID of the transaction the action applies to.
@@ -65,8 +60,6 @@ export interface TransactionActionRequest {
  * See https://www.twikey.com/api/#refund-a-transaction
  *
  * TransactionRefundRequest holds the parameters to refund a transaction.
- *
- * Mirrors Python's `RefundRequest` (`twikey/model/transaction_request.py`).
  *
  * Attributes:
  *   id - Transaction ID.
@@ -88,8 +81,6 @@ export interface TransactionRefundRequest {
  * hasn't yet been sent to the bank. At least one of `id` or `ref` must be
  * provided.
  *
- * Mirrors Python's `RemoveTransactionRequest` (`twikey/model/transaction_request.py`).
- *
  * Attributes:
  *   id - A transaction ID as returned in the POST response.
  *   ref - The transaction reference provided during creation.
@@ -104,8 +95,6 @@ export interface TransactionRemoveRequest {
  *
  * TransactionQueryRequest holds the parameters to query transactions,
  * starting from a specific transaction ID.
- *
- * Mirrors Python's `QueryTransactionsRequest` (`twikey/model/transaction_request.py`).
  *
  * Attributes:
  *   fromId - The ID of the transaction to start from.

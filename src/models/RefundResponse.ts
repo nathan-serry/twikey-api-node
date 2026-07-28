@@ -10,8 +10,6 @@ export interface BeneficiaryResponse {
  * RefundResponse represents a single credit-transfer (refund) entry as returned
  * by the Twikey API.
  *
- * Mirrors Python's `Refund` (`twikey/model/refund_response.py`).
- *
  * Attributes:
  *   id - Twikey identifier of the refund.
  *   iban - IBAN of the beneficiary.

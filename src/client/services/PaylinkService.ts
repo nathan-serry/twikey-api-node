@@ -125,8 +125,7 @@ export class PaylinkService extends BaseService {
    * This method retrieves events from Twikey since the last sync. It's
    * typically used to synchronize your CRM or ERP system with the current
    * state on the Twikey platform. Can be triggered periodically or via
-   * webhook. Unlike Python's callback-based `PaylinkFeed` handler, this
-   * returns an async generator you iterate with `for await`.
+   * webhook. This returns an async generator, so iterate it with `for await`.
    *
    * @param options - Feed options: `includes` to request extra fields, and
    *   `start_position` to resume from a previous `last_position`. (optional)

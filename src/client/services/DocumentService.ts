@@ -109,10 +109,9 @@ export class DocumentService extends BaseService {
    * This method retrieves events from Twikey since the last sync. These events
    * concern mandates only. It's typically used to synchronize your CRM or ERP
    * system with the current state on the Twikey platform. Can be triggered
-   * periodically or via webhook. Unlike Python's callback-based `DocumentFeed`
-   * handler, this returns an async generator you iterate with `for await`; the
-   * `IsNew`/`IsUpdated`/`IsCancelled` flags on each yielded message tell you which
-   * kind of event it is.
+   * periodically or via webhook. This returns an async generator, so iterate it
+   * with `for await`; the `IsNew`/`IsUpdated`/`IsCancelled` flags on each yielded
+   * message tell you which kind of event it is.
    *
    * @param options - Feed options: `includes` to request extra fields, and
    *   `start_position` to resume from a previous `last_position`. (optional)
