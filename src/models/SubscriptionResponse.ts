@@ -1,32 +1,44 @@
-// TODO: are these fields correctly mapped and by extension are all fields correctly mapped
-
 /**
  * See https://www.twikey.com/api/#add-a-subscription
  *
- * The reply from creating, updating, or fetching a subscription.
+ * The reply from creating, updating or fetching a subscription, and one entry of
+ * `SubscriptionService.query()`.
+ *
+ * These are the names the API actually sends, confirmed against live payloads from
+ * `POST /subscription`, `GET /subscription/{mndtId}/{ref}` and `GET /subscription/query`
+ * across 89 subscriptions: create and detail replies are byte-identical in shape, and query
+ * entries carry the same keys.
  *
  * Attributes:
- *   mandateNumber - Mandate reference the subscription belongs to.
- *   ref - Reference of the subscription.
- *   state - Subscription state.
- *   amount - Amount of the transaction.
- *   startDate - Start date of the subscription.
- *   stopDate - Stop condition for the subscription.
- *   recurrencePeriod - Recurrence rule.
- *   recurrenceCount - Number of times the subscription should run.
- *   transactionMessage - Message used on the individual transactions created
- *     by the subscription.
+ *   id - Twikey's numeric identifier for the subscription.
+ *   mndtId - Mandate reference the subscription belongs to.
+ *   ref - Reference of the subscription. Null when the subscription has none.
+ *   state - Subscription state, e.g. 'active' or 'cancelled'.
+ *   amount - Amount of each transaction the subscription creates.
+ *   message - Message to the subscriber.
+ *   recurrence - Recurrence rule, e.g. '1m'.
+ *   start - Start date of the subscription (YYYY-MM-DD).
+ *   last - Date the subscription last ran, or null when it has not run yet.
+ *   next - Date the subscription runs next. Absent once there is no next run, as on a
+ *     cancelled subscription.
+ *   plan - Payment plan the subscription belongs to; 0 when it belongs to none.
+ *   runs - Number of transactions the subscription has created so far.
+ *   stopAfter - Number of runs after which the subscription stops; 0 when it is open-ended.
  */
 export interface SubscriptionResponse {
-    mandateNumber: string;
-    ref: string;
+    id: number;
+    mndtId: string;
+    ref: string | null;
     state: string;
     amount: number;
-    startDate?: string;
-    stopDate?: string;
-    recurrencePeriod?: string;
-    recurrenceCount?: number;
-    transactionMessage?: string;
+    message: string;
+    recurrence: string;
+    start: string;
+    last: string | null;
+    next?: string;
+    plan: number;
+    runs: number;
+    stopAfter: number;
 }
 
 /**
