@@ -1,7 +1,7 @@
 import {TwikeyClient, TwikeyError, Webhook} from "../src";
 import {describe, test} from "node:test";
 import * as assert from 'assert';
-import {apiUrl, getClient, newClient, noApiConfigured} from "./support/helpers";
+import {apiUrl, getClient, noApiConfigured} from "./support/helpers";
 
 describe('General', {skip: noApiConfigured}, () => {
 
@@ -88,9 +88,12 @@ describe('Webhook', async () => {
 describe('Logout', {skip: noApiConfigured}, () => {
 
     test('logout ends the session server-side', async () => {
-        // Its own client: logging out invalidates the token, and every other suite in this
-        // file shares the memoised one.
-        const client = newClient();
+        // Deliberately the shared client, not one of its own. A logout ends the session for the
+        // whole api key, so a second client cannot isolate the damage — it would kill the shared
+        // client's token too, and since every test file now runs in one process, every suite
+        // after this one would fail with 429 err_not_authorised. Logging out the shared client
+        // instead means the final ping below leaves it holding a valid session again.
+        const client = getClient();
         const token = await client.ping();
         assert.ok(token, 'no session token returned');
         assert.ok(client.merchantId, 'merchantId should be set from the login response headers');

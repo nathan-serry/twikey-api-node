@@ -10,8 +10,9 @@ export const noApiConfigured = !process.env.TWIKEY_API_KEY;
 export const apiUrl = (): string =>
     process.env.TWIKEY_API_URL || "https://api.beta.twikey.com/creditor";
 
-// A client of its own, for tests that end the session (logout): the client returned by
-// getClient() is memoised and shared by every suite in the same file.
+// A client of its own, for a test that wants a session separate from the shared one. Note this
+// does NOT isolate a logout: the session belongs to the api key, so logging out here also kills
+// the token getClient()'s client is holding.
 export const newClient = (): TwikeyClient => new TwikeyClient({
     apiKey: process.env.TWIKEY_API_KEY || '',
     apiUrl: apiUrl(),
@@ -25,6 +26,11 @@ export const getClient = (): TwikeyClient => {
     }
     return cachedClient;
 };
+// Note for anyone adding a test that ends the session: every test file now shares one process
+// (`--experimental-test-isolation=none`), and suites capture this client while they are being
+// registered — before any test runs. So dropping the memo afterwards does not help a suite that
+// already holds the reference. Log out the shared client and log it back in instead, the way
+// `client.test.ts` does.
 
 // Reporting/reconciliation lives on a creditor with that feature enabled, reached via
 // its own API key (the default key can't see it). Skip the suite until REPORTING_API_KEY

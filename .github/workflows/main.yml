@@ -4,10 +4,29 @@ on:
   workflow_dispatch: {}
   push:
 
+# Supersede an in-flight run for the same ref. The test job talks to the shared beta
+# creditor, so letting stale runs finish only burns login budget. Tags get their own
+# group, so a release run is never cancelled by a later branch push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Needs no credentials and makes no API calls, so it can run on every supported Node
+  # version. This is what proves the package still compiles, loads and constructs on the
+  # oldest version in `engines`.
   build:
-    name: 'Static Checks'
+    name: 'Static Checks (${{ matrix.node }})'
     runs-on: 'ubuntu-24.04'
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          # Should include even numbers >= 20.
+          # see: https://nodejs.org/en/about/previous-releases
+          - '24'
+          - '22'
+          - '20'
 
     steps:
       - uses: actions/checkout@v4
@@ -15,8 +34,11 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node }}
           cache: 'npm'
+
+      - name: Print Node.js version
+        run: node -v
 
       - name: Npm install
         run: npm install
@@ -24,20 +46,30 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Npm build
+        run: npm run build
+
+      - name: Import and construct
+        run: npm run smoke
+
   test:
     name: Test (${{ matrix.node }})
     needs: [build]
     strategy:
       fail-fast: false
+      # The suites share one beta creditor and one api key. Running the legs one at a
+      # time keeps the session-token exchanges from colliding with each other.
+      max-parallel: 1
       matrix:
         os:
           - 'ubuntu-24.04'
+        # Only versions whose test runner can share a single process between test files.
+        # `npm run test` passes --experimental-test-isolation=none, which collapses the
+        # whole suite to one login instead of one per file; the flag does not exist before
+        # Node 22.8. Node 20 is covered by the credential-free `build` job above.
         node:
-          # should include even numbers >= 12
-          # see: https://nodejs.org/en/about/previous-releases
           - '24'
           - '22'
-          - '20'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -54,12 +86,20 @@ jobs:
       - name: Npm install
         run: npm install
 
+      # Suites whose secret is not set skip themselves rather than failing, so this list
+      # can be populated incrementally. A green run with secrets missing therefore covers
+      # less than a local run does — check the output for '# SKIP'.
       - name: Test
         run: npm run test
         env:
           TWIKEY_API_KEY: ${{ secrets.TWIKEY_API_KEY }}
+          TWIKEY_API_URL: ${{ secrets.TWIKEY_API_URL }}
           CT: ${{ secrets.CT }}
-          MNDTNUMBER: ${{ secrets.MNDTNUMBER }}
+          REPORTING_API_KEY: ${{ secrets.REPORTING_API_KEY }}
+          REFUND_IBAN: ${{ secrets.REFUND_IBAN }}
+          PAID_PAYLINK_ID: ${{ secrets.PAID_PAYLINK_ID }}
+          PAID_TRANSACTION_ID: ${{ secrets.PAID_TRANSACTION_ID }}
+          CUSTOMER_NUMBER: ${{ secrets.CUSTOMER_NUMBER }}
 
   publish:
     name: Publish

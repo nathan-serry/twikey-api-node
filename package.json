@@ -27,10 +27,12 @@
   ],
   "license": "MIT",
   "scripts": {
-    "test": "tsx --test --test-concurrency=1",
+    "test": "tsx --test --test-concurrency=1 --experimental-test-isolation=none test/*.test.ts",
+    "test:perfile": "tsx --test --test-concurrency=1 test/*.test.ts",
     "typecheck": "tsc -p ./tsconfig.json",
     "clean": "rm -rf ./dist",
     "build": "npm run clean && tsc -p ./tsconfig.build.json",
+    "smoke": "node -e \"const {TwikeyClient} = require('./dist'); new TwikeyClient({apiKey: 'smoke', apiUrl: 'https://api.example.test/creditor'}); console.log('import + construct ok on ' + process.version);\"",
     "prepack": "npm run build",
     "dist": "npm publish"
   },
