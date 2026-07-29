@@ -87,7 +87,11 @@ describe('Refund', {skip: noApiConfigured}, async () => {
         assert.ok(refund?.id, 'addRefund did not return a created refund id');
 
         const fetched = await client.refund.detail(refund.id);
-        assert.strictEqual(Number(fetched.id), Number(refund.id), 'detail returned a different refund');
+        // Compared as strings, not through Number(): the id is an e2e reference like
+        // 'F225ACA220260729162430761734248', so Number() of either side is NaN — and
+        // strictEqual treats NaN as equal to NaN, which made this assertion pass whatever
+        // the two ids were.
+        assert.strictEqual(String(fetched.id), String(refund.id), 'detail returned a different refund');
 
         await client.refund.remove(refund.id);
         await assert.rejects(

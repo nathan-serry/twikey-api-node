@@ -7,27 +7,32 @@ import {BaseInfo} from "./Shared";
  * customer or name.
  *
  * Attributes:
- *   ct - Contract template (for customer registration).
+ *   ct - Contract template (for customer registration). Optional; the creditor's
+ *     default profile is used when it is left out.
  *   sendInvite - How to send the invite (e.g. 'email', 'sms').
  *   message - Message the customer will see on the bank statement.
  *   remittance - Message shown at payment time; defaults to `message` if empty.
  *   ref - Reference for the payment link.
  *   redirectUrl - URL to redirect to after payment.
  *   place - Place of payment.
+ *   expiry - Date after which the link can no longer be paid.
+ *   txref - Reference of an existing unpaid transaction to attach the link to.
  *   method - A specific payment method to skip the selection screen.
  *   invoice - A specific invoice number to pay.
  *   amount - Amount to be paid.
  *   isTemplate - Whether to use a customized payment page.
  */
 export interface PaylinkRequest extends BaseInfo {
-    ct: number;
+    ct?: number;
     sendInvite?: boolean | string;
 
     message: string;
     remittance?: string;
-    ref: string;
+    ref?: string;
     redirectUrl?: string;
     place?: string;
+    expiry?: string;
+    txref?: string;
     method?: string;
     invoice?: string;
     amount: number;

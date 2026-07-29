@@ -1,29 +1,87 @@
 import {Customer} from "./CustomerRequest";
 
 /**
+ * One line item of an invoice, sent in `InvoiceRequest.lines`.
+ *
+ * The line amounts are checked against the invoice total: the sum of all lines
+ * including VAT must equal `InvoiceRequest.amount`, or the API rejects the
+ * invoice with `err_invalid_amount` naming both figures.
+ *
+ * Attributes:
+ *   code - Product code.
+ *   description - Description of the item.
+ *   quantity - Number of units.
+ *   uom - Unit of measurement (max 3 characters), e.g. 'st'.
+ *   unitprice - Price of one unit.
+ *   vatrate - VAT rate, as a percentage.
+ *   vatcode - VAT code.
+ *   discount - Positive amount to deduct from this line. The line's `vatrate`
+ *     applies to the discount too, producing a negative VAT contribution.
+ */
+export interface InvoiceLine {
+  code?: string;
+  description: string;
+  quantity: number;
+  uom?: string;
+  unitprice: number;
+  vatrate: number;
+  vatcode?: string;
+  discount?: number;
+}
+
+/**
+ * The period an invoice covers, sent in `InvoiceRequest.invoicePeriod`.
+ *
+ * Attributes:
+ *   startDate - First day of the period (YYYY-MM-DD).
+ *   endDate - Last day of the period (YYYY-MM-DD).
+ */
+export interface InvoicePeriod {
+  startDate: string;
+  endDate: string;
+}
+
+/**
  * See https://www.twikey.com/api/#create-invoice
  *
  * InvoiceRequest holds the full set of fields used to create an invoice via
  * the Twikey API.
  *
+ * The customer can be given in any of three ways: inline as `customer`, or by
+ * pointing at one that already exists with `customerByRef` (customer number) or
+ * `customerByDocument` (mandate reference). Supply exactly one of them.
+ *
  * Attributes:
  *   id - UUID of the invoice.
  *   number - Invoice number (unique identifier).
- *   title - Title or description for the invoice.
+ *   title - Title or description for the invoice. One is generated from the
+ *     invoice number when omitted.
  *   remittance - Payment message, defaults to `title` if not specified.
  *   ref - Internal reference for your system.
  *   ct - Contract template identifier.
- *   amount - Amount to be billed.
+ *   amount - Amount to be billed. Send a negative amount for a credit note; an
+ *     invoice for zero is set to 'paid' immediately after import.
  *   date - Invoice issue date (YYYY-MM-DD).
  *   duedate - Due date for payment (YYYY-MM-DD).
+ *   invoicePeriod - The period this invoice covers.
+ *   paidamount - Amount already paid on the invoice, e.g. a pre-payment, so the
+ *     remaining payable amount is reflected correctly.
  *   locale - Language of the invoice (e.g., 'nl', 'fr', 'de').
- *   customer - Customer details for the invoice.
+ *   customer - Customer details for the invoice. Not needed when the invoice
+ *     points at an existing customer with `customerByRef`/`customerByDocument`.
  *   customerByDocument - Mandate number to link the invoice to an existing customer.
+ *   customerByRef - Customer number to link the invoice to an existing customer.
  *   manual - Whether the invoice should be collected automatically.
- *   pdf - Base64-encoded PDF content.
+ *   pdf - Base64-encoded PDF content. Use this or `pdfUrl`, not both.
+ *   pdfUrl - URL Twikey should download the invoice PDF from. Use this or `pdf`,
+ *     not both.
  *   redirectUrl - Redirect URL after payment.
  *   email - Custom email address for invoicing.
+ *   cc - Email addresses to put in CC when the invoice is sent.
  *   relatedInvoiceNumber - Reference to link a credit note to an invoice.
+ *   lines - The invoice's individual line items.
+ *   campaign - Name of a new or existing billing run to add the invoice to.
+ *   poNumber - Purchase order number the buyer assigned to this invoice.
  */
 export interface InvoiceRequest {
   id?: string;
@@ -35,14 +93,22 @@ export interface InvoiceRequest {
   amount: number;
   date: string;
   duedate: string;
+  invoicePeriod?: InvoicePeriod;
+  paidamount?: number;
   locale?: string;
-  customer: Customer;
+  customer?: Customer;
   customerByDocument?: string;
+  customerByRef?: string;
   manual?: boolean;
   pdf?: string;
+  pdfUrl?: string;
   redirectUrl?: string;
   email?: string;
+  cc?: string[];
   relatedInvoiceNumber?: string;
+  lines?: InvoiceLine[];
+  campaign?: string;
+  poNumber?: string;
 }
 
 /**
@@ -139,15 +205,25 @@ export interface UblUploadOptions {
  * InvoiceUpdateRequest holds the fields for `InvoiceService.update()`.
  *
  * Attributes:
- *   state - Status of the invoice.
+ *   title - Title of the invoice.
+ *   state - Status of the invoice: 'booked', 'archived' or 'paid'.
  *   amount - Amount to be billed.
+ *   date - Invoice date (YYYY-MM-DD).
  *   duedate - Due date for payment (YYYY-MM-DD).
+ *   ref - Invoice reference.
+ *   pdf - Base64-encoded PDF content.
+ *   extra - Custom attributes to add or update, as key-value pairs.
  *   message - Payment message.
  */
 export interface InvoiceUpdateRequest {
+  title?: string;
   state?: string;
   amount?: number;
+  date?: string;
   duedate?: string;
+  ref?: string;
+  pdf?: string;
+  extra?: Record<string, string>;
   message?: string;
 }
 
