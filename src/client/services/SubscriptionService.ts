@@ -22,7 +22,12 @@ export class SubscriptionService extends BaseService {
   }
 
   /**
-   * Fetch a single subscription's details.
+   * Fetch a single subscription's details by mandate and reference.
+   *
+   * Returns the same shape as `create()`: `id`, `mndtId`, `ref`, `state`, `amount`,
+   * `message`, `recurrence`, `start`, `last`, `next`, `plan`, `runs` and `stopAfter`.
+   * `next` is absent once there is no next scheduled run, such as on a cancelled
+   * subscription; `last` and `ref` are always present but may be null.
    *
    * @param mandateNumber - The mandate reference the subscription belongs to.
    * @param ref - The subscription's reference.
@@ -35,6 +40,10 @@ export class SubscriptionService extends BaseService {
 
   /**
    * Query/list subscriptions.
+   *
+   * Returns every subscription matching the given filters, unwrapped from the API's
+   * `{ Subscriptions: [...] }` envelope into a plain array. Each entry has the same
+   * fields as `create()`'s return value.
    *
    * @param params - Query parameters.
    * @returns Matching subscriptions.
@@ -49,9 +58,13 @@ export class SubscriptionService extends BaseService {
   /**
    * Trigger a named action on a subscription.
    *
+   * The action name is sent as the final path segment of the request
+   * (`/subscription/{mandateNumber}/{ref}/{action}`), so which action names the API
+   * accepts is determined server-side rather than by this method.
+   *
    * @param mandateNumber - The mandate reference the subscription belongs to.
    * @param ref - The subscription's reference.
-   * @param action - The action to trigger.
+   * @param action - The action to trigger, sent as a path segment.
    * @returns Nothing.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */

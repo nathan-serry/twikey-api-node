@@ -170,8 +170,12 @@ export class InvoiceService extends BaseService {
   /**
    * Reoffer an invoice via a PATCH request to the API.
    *
+   * Re-submits the invoice's underlying transaction to the bank for
+   * collection. This is a dedicated endpoint, separate from `action()`'s
+   * `'reoffer'` action type, and takes no fields beyond the invoice ID.
+   *
    * @param invoiceId - The unique identifier of the invoice to reoffer.
-   * @returns Nothing.
+   * @returns Nothing. The API answers with no body on success.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async reoffer(invoiceId: string): Promise<void> {
@@ -181,8 +185,11 @@ export class InvoiceService extends BaseService {
   /**
    * Fetch a QR code for paying an invoice.
    *
+   * Returns the invoice's payment URL together with a scannable QR code
+   * representation of that URL, when the API includes one in the response.
+   *
    * @param invoiceId - The unique identifier of the invoice.
-   * @returns The QR code URL (and image, if returned by the API).
+   * @returns The payment `url`, plus the `qr` code itself when the API returns one.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async qr(invoiceId: string): Promise<InvoiceQrResponse> {
@@ -292,8 +299,13 @@ export class InvoiceService extends BaseService {
   /**
    * Fetch the PDF of an invoice.
    *
+   * Downloads the invoice document as binary PDF content rather than the JSON
+   * used by the rest of this service, requesting it with an `Accept:
+   * application/pdf` header and reading the response as raw bytes.
+   *
    * @param invoiceId - The unique identifier of the invoice.
-   * @returns A structured response object containing the PDF content and filename.
+   * @returns A structured response object containing the PDF content as a
+   *   `Buffer`, plus a filename derived from the invoice ID.
    * @throws {TwikeyError} If the request fails or the response is invalid.
    */
   async pdf(invoiceId: string): Promise<PdfResponse> {

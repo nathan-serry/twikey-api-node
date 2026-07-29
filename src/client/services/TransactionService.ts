@@ -34,8 +34,15 @@ export class TransactionService extends BaseService {
   /**
    * Create a transaction as a reservation rather than an immediate collection.
    *
-   * @param request - The transaction fields to send.
-   * @returns The created (reserved) transaction.
+   * Sends a POST request to `/transaction`, the same endpoint used by
+   * `create()`, with `reservation` set to `true` on the outgoing body. The
+   * amount is reserved against the mandate instead of being collected right
+   * away; use `capture()` afterwards, passing the returned transaction's
+   * `id`, to actually collect it.
+   *
+   * @param request - The transaction fields to send (mandate, amount, message,
+   *   etc.), the same shape as `create()`'s request.
+   * @returns The created reservation, parsed from the API's `Entries[0]`.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async authorise(request: TransactionRequest): Promise<Transaction> {
@@ -45,9 +52,14 @@ export class TransactionService extends BaseService {
   /**
    * Capture a previously reserved transaction.
    *
+   * Sends a POST request to `/transaction`, carrying the reservation's `id`
+   * in the `X-Reservation` header (rather than in the body) so the API
+   * collects against the existing reservation instead of creating a new one.
+   * The remaining request fields are sent as the body, the same as `create()`.
+   *
    * @param request - The transaction fields to send, plus the `id` of the
-   *   reservation to capture.
-   * @returns The captured transaction.
+   *   reservation (as returned by `authorise()`) to capture.
+   * @returns The captured transaction, parsed from the API's `Entries[0]`.
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async capture(request: TransactionRequest & { id: string }): Promise<Transaction> {
@@ -119,8 +131,14 @@ export class TransactionService extends BaseService {
   /**
    * Create multiple transactions in a single batch.
    *
-   * @param entries - The transactions to create.
-   * @returns The created batch.
+   * Sends a POST request to `/transaction/bulk` with the whole `entries` array
+   * as a JSON body, so many transactions can be submitted in one call instead
+   * of one `create()` call each. Follow up with `bulkStatus()`, passing the
+   * returned `batchId`, to check on the individual transactions once the
+   * batch has been processed.
+   *
+   * @param entries - The transactions to create, each shaped like `create()`'s request.
+   * @returns The created batch's identifier (`batchId`).
    * @throws {TwikeyError} If the API returns an error or the request fails.
    */
   async bulkCreate(entries: TransactionRequest[]): Promise<TransactionBulkResult> {
@@ -130,10 +148,16 @@ export class TransactionService extends BaseService {
   /**
    * Fetch the status of every transaction in a batch created via `bulkCreate()`.
    *
-   * @param batchId - Identifier of the batch.
-   * @returns The batch's transaction entries, or null while the batch is still being
-   *   processed. Poll until it returns a list.
-   * @throws {TwikeyError} If the API returns an error or the request fails.
+   * Sends a GET request to `/transaction/bulk` with `batchId` as a query
+   * parameter. While the batch is still being processed, the API answers with
+   * a 409 status rather than a body; this method treats that case as `null`
+   * instead of throwing, so callers can poll until a list of entries comes
+   * back.
+   *
+   * @param batchId - Identifier of the batch, as returned by `bulkCreate()`.
+   * @returns The batch's transaction entries (id, ref, mandate, status), or
+   *   null while the batch is still being processed. Poll until it returns a list.
+   * @throws {TwikeyError} If the API returns an error other than 409, or the request fails.
    */
   async bulkStatus(batchId: string): Promise<TransactionBulkEntry[] | null> {
     try {

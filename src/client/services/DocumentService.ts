@@ -163,7 +163,11 @@ export class DocumentService extends BaseService {
   /**
    * Update the status of a mandate via a POST request to the API.
    *
-   * @param mandateId - The unique identifier of the mandate (mndtId).
+   * This sends a `{status}` body to `/mandate/{mandateId}`, distinct from
+   * `update()` (which posts a broader set of mandate fields, including `state`,
+   * to `/mandate/update`).
+   *
+   * @param mandateId - The unique identifier of the mandate to update (mndtId).
    * @param status - The new status to set on the mandate.
    * @returns Nothing.
    * @throws {TwikeyError} If the API returns an error or the request fails.
