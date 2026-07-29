@@ -1,4 +1,4 @@
-import {FeedOptions} from "../src";
+import {DocumentFeedMessage, FeedOptions} from "../src";
 import {describe, test} from "node:test";
 import * as assert from 'assert';
 import {faker} from '@faker-js/faker';
@@ -8,7 +8,9 @@ describe('Document', {skip: noApiConfigured}, async () => {
 
     const client = getClient();
 
-    test('create -> uploadPdf -> pdf -> sign -> detail -> feed', async () => {
+    const CANCEL_REASON = 'reason for cancellation';
+
+    test('create -> uploadPdf -> pdf -> sign -> detail -> cancel -> feed', async () => {
         const document = await client.document.create({
             ct: CT(),
             iban: TEST_IBAN,
@@ -51,8 +53,15 @@ describe('Document', {skip: noApiConfigured}, async () => {
         const templateId = details.SplmtryData?.find(d => d.Key === 'TemplateId')?.Value;
         assert.strictEqual(Number(templateId), CT(), 'TemplateId should be the contract template');
 
+        // Cancelled here rather than in a suite of its own so the effect is checked in the
+        // same feed pass that follows. A 204 (no throw) is all cancel() reports directly, and
+        // the feed's read position is server-side and shared by the api key — so a drain
+        // anywhere else could consume this entry before a second drain got to assert on it.
+        await client.document.cancel(importedMandateNumber, CANCEL_REASON);
+
         const options: FeedOptions = {};
         let hasDocuments = false;
+        let cancelled: DocumentFeedMessage | undefined;
         const feed = client.document.feed(options);
         for await (const doc of feed) {
             if (!hasDocuments) {
@@ -72,8 +81,20 @@ describe('Document', {skip: noApiConfigured}, async () => {
             }
             if (doc.IsCancelled) {
                 assert.ok(doc);
+                // A cancellation entry carries no `Mndt` block at all — unlike new and updated
+                // entries, it names its subject in `OrgnlMndtId`.
+                if (doc.OrgnlMndtId === importedMandateNumber) {
+                    cancelled = doc;
+                }
             }
         }
+
+        assert.ok(cancelled, 'the cancelled mandate did not appear on the feed');
+        assert.strictEqual(cancelled.IsCancelled, true, 'feed entry not marked as cancelled');
+        // `CxlRsn` arrives as an object ({Orgtr, Rsn}) rather than the plain string the feed
+        // type declares, hence the cast.
+        const cxlRsn = cancelled.CxlRsn as unknown as { Rsn?: string } | undefined;
+        assert.strictEqual(cxlRsn?.Rsn, CANCEL_REASON, 'cancel reason not reported');
     });
 });
 
@@ -107,6 +128,24 @@ describe('Document action', {skip: noApiConfigured}, async () => {
         await assert.rejects(
             () => client.document.action('NON-EXISTENT-' + faker.git.commitSha({length: 8}), {type: 'reminder', reminder: '1'}),
             {statusCode: 400, code: 'err_not_found'},
+        );
+    });
+});
+
+// The positive path lives in the lifecycle test above, which already drains the feed the
+// assertion needs. Only the negative path stands alone.
+describe('Document cancel', {skip: noApiConfigured}, async () => {
+
+    const client = getClient();
+
+    // Negative path: cancelling a non-existent mandate must be rejected by the API (a
+    // structured err_* error), proving the endpoint/verb are right — not silently accepted.
+    // cancel() has no ct parameter, so an id that matches no mandate at all can't even be
+    // resolved to a contract — the API reports that as err_no_contract, not err_not_found.
+    test('cancel rejects for a non-existent mandate', async () => {
+        await assert.rejects(
+            () => client.document.cancel('NON-EXISTENT-' + faker.git.commitSha({length: 8}), 'reason'),
+            {statusCode: 400, code: 'err_no_contract'},
         );
     });
 });
