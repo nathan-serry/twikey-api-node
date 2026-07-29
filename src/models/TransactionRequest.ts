@@ -1,5 +1,5 @@
 /**
- * See https://www.twikey.com/api/#new-transaction
+ * See https://www.twikey.com/api/#create-transaction
  *
  * TransactionRequest holds the fields needed to create a new transaction.
  *

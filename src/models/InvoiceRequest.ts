@@ -152,7 +152,7 @@ export interface InvoiceUpdateRequest {
 }
 
 /**
- * See https://www.twikey.com/api/#action-on-invoice
+ * See https://www.twikey.com/api/#action-an-invoice
  *
  * InvoiceActionRequest holds the parameters to perform an action on an invoice.
  *

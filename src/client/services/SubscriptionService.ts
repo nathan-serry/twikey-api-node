@@ -22,6 +22,8 @@ export class SubscriptionService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#retrieve-a-single-subscription
+   *
    * Fetch a single subscription's details by mandate and reference.
    *
    * Returns the same shape as `create()`: `id`, `mndtId`, `ref`, `state`, `amount`,
@@ -39,6 +41,8 @@ export class SubscriptionService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#query-all-subscription
+   *
    * Query/list subscriptions.
    *
    * Returns every subscription matching the given filters, unwrapped from the API's
@@ -56,6 +60,8 @@ export class SubscriptionService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#action-a-subscription
+   *
    * Trigger a named action on a subscription.
    *
    * The action name is sent as the final path segment of the request

@@ -197,7 +197,7 @@ export class InvoiceService extends BaseService {
   }
 
   /**
-   * See https://www.twikey.com/api/#action-on-invoice
+   * See https://www.twikey.com/api/#action-an-invoice
    *
    * Trigger a specific action on an existing invoice.
    *
@@ -262,7 +262,7 @@ export class InvoiceService extends BaseService {
   }
 
   /**
-   * See https://www.twikey.com/api/#bulk-create-invoices
+   * See https://www.twikey.com/api/#bulk-create
    *
    * Creates multiple invoices in a single batch upload.
    *
@@ -297,6 +297,8 @@ export class InvoiceService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#retrieve-invoice-pdf
+   *
    * Fetch the PDF of an invoice.
    *
    * Downloads the invoice document as binary PDF content rather than the JSON

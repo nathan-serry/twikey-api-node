@@ -5,6 +5,8 @@ import {ReconciliationFile} from "../../models/ReportingResponse";
 export class ReportingService extends BaseService {
 
   /**
+   * See https://www.twikey.com/api/#account-reporting
+   *
    * Fetch the reporting feed of previously imported bank-statement entries via
    * a GET request to the API.
    *
@@ -68,6 +70,8 @@ export class ReportingService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#generate-files
+   *
    * Generate a reconciliation file via a POST request to the API.
    *
    * The file is built asynchronously from the creditor's existing collections
@@ -87,6 +91,8 @@ export class ReportingService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#list-files
+   *
    * List the generated reconciliation files via a GET request to the API.
    *
    * Each entry's `name` is the identifier `downloadFile()` needs to retrieve
@@ -102,6 +108,8 @@ export class ReportingService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#download-file
+   *
    * Download a previously generated reconciliation file via a GET request to
    * the API.
    *

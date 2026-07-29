@@ -19,7 +19,7 @@ import {FeedOptions} from "../../models/Shared";
 
 export class TransactionService extends BaseService {
   /**
-   * See https://www.twikey.com/api/#new-transaction
+   * See https://www.twikey.com/api/#create-transaction
    *
    * Create a new transaction via a POST request to the API.
    *
@@ -129,6 +129,8 @@ export class TransactionService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#bulk-create-transactions
+   *
    * Create multiple transactions in a single batch.
    *
    * Sends a POST request to `/transaction/bulk` with the whole `entries` array
@@ -146,6 +148,8 @@ export class TransactionService extends BaseService {
   }
 
   /**
+   * See https://www.twikey.com/api/#bulk-batch-details
+   *
    * Fetch the status of every transaction in a batch created via `bulkCreate()`.
    *
    * Sends a GET request to `/transaction/bulk` with `batchId` as a query
@@ -232,7 +236,7 @@ export class TransactionService extends BaseService {
   }
 
   /**
-   * See https://www.twikey.com/api/#update-transaction
+   * See https://www.twikey.com/api/#update-a-transaction
    *
    * Update existing transaction details.
    *

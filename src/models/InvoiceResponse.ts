@@ -105,7 +105,7 @@ export interface InvoiceQrResponse {
 }
 
 /**
- * See https://www.twikey.com/api/#bulk-create-invoices
+ * See https://www.twikey.com/api/#bulk-create
  *
  * The reply from `InvoiceService.bulkCreate()`.
  *

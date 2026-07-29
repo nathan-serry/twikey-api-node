@@ -83,7 +83,7 @@ export class DocumentService extends BaseService {
   }
 
   /**
-   * See https://www.twikey.com/api/#query-mandate
+   * See https://www.twikey.com/api/#mandate-query
    *
    * Retrieve contract details by IBAN, customer number, email, or a combination of
    * query parameters.
@@ -177,7 +177,7 @@ export class DocumentService extends BaseService {
   }
 
   /**
-   * See https://www.twikey.com/api/#retrieve-pdf
+   * See https://www.twikey.com/api/#retrieve-mandate-pdf
    *
    * Retrieve the PDF of a mandate via a GET request to the API.
    *
